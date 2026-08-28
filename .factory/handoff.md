@@ -1,5 +1,11 @@
 # Handoff — Self-Study Checkpoints v1
 
+## Independent verification status: FAIL
+
+Candidate `1048df4c6fff0b647b7cb9d3f1ca5457121e2282` was independently verified on 2026-08-28 UTC against <https://self-study-checkpoints.sociobot.in/>. The live HTML, JS, CSS, and service worker are byte-identical to the candidate build. Clean `npm ci`, `npm test` (4 unit + 6 browser tests), `npm run test:unit`, and `npm run build` all pass; normal review/seal/verify flow, offline reload, axe serious/critical, Lighthouse (100 performance / 100 accessibility), privacy outbound-request checks, and responsive visual checks pass.
+
+This handoff is nevertheless **FAIL** pending the P2 acceptance defects documented in [`.factory/verification.md`](verification.md): hashed assets are served with only `max-age=30` instead of immutable long-lived caching; the skip link does not move keyboard focus to main content; and the 6–12 week date feedback stays stale while the date is edited. Two P3 follow-ups are also recorded: raw JSON parser errors and no CSP. Do not treat the earlier ship report below as release approval.
+
 ## What shipped
 
 - A Vite + vanilla TypeScript static application implementing the complete owner → reviewer → owner handoff.
