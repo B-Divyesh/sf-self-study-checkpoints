@@ -1,0 +1,30 @@
+{
+  "slug": "self-study-checkpoints",
+  "title": "Self-Study Checkpoints",
+  "territory": "utilities",
+  "user": "A serious independent math or computer-science learner who needs an externally legible way to prove progress through a difficult topic without enrolling in a full course.",
+  "evidence": [
+    {
+      "url": "https://hn.algolia.com/api/v1/items/46434584",
+      "date": "2025-12-30",
+      "quote_or_summary": "A self-learner of abstract algebra asks how to validate deep study and specifically wishes for a rigorous scheduled examination as an external benchmark."
+    },
+    {
+      "url": "https://github.com/ankitects/anki/issues/4062",
+      "date": "2025-06-06",
+      "quote_or_summary": "Anki discusses exposing evaluation for user-provided parameters, reflecting demand for learners to inspect and tune assessment behavior rather than accept opaque defaults."
+    }
+  ],
+  "recurrence": "Both sources point to learners needing transparent, intentional assessment. The direct request describes motivation failure without a clear benchmark.",
+  "current_workaround": "Follow a textbook alone, solve selected exercises, join an expensive course, or publish informal notes without a coherent mastery record.",
+  "incumbents_and_gap": "Coursera/edX offer whole courses and Brilliant offers guided practice; neither lets an individual assemble a small, rigorous checkpoint plan with publicly reviewable proof attempts and a chosen assessor.",
+  "smallest_useful_product": "A static-web checkpoint builder: define a syllabus slice, target date, problem set links, proof/code submission prompts, and an invited reviewer rubric; export a signed completion packet. Non-goals: issuing accredited credentials, auto-solving proofs, or proctoring.",
+  "success_measure": "At least 40% of created checkpoints result in a completed packet reviewed by another person within the chosen 6–12 week window.",
+  "artifact_class": "static-web",
+  "monetization": "free — credibility depends on portable, inspectable packets rather than a proprietary credential wall.",
+  "constraints": "Clearly label peer review as non-accredited; link rather than redistribute copyrighted exercises; do not use hidden automated grading for proofs.",
+  "est_build_effort": "S",
+  "why_distinct": "It supplies commitment and evidence around self-study, not another content library or AI answer engine.",
+  "confidence": 4,
+  "state": "RESEARCHED"
+}
