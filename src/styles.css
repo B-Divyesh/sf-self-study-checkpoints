@@ -323,6 +323,7 @@ select { appearance: auto; }
   transform: translateY(160%);
   transition: transform 200ms ease;
 }
+.notice:empty { display: none; }
 .notice:not(:empty) { transform: translateY(0); }
 .notice.error { background: var(--danger); }
 .notice .text-button { margin-left: 10px; color: var(--paper-raised); }

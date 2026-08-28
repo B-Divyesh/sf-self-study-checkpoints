@@ -1,14 +1,51 @@
 # Self-Study Checkpoints
 
-Live: https://self-study-checkpoints.sociobot.in — built by the Param Factory (`static-web`).
+Self-Study Checkpoints is a free, local-first web tool for serious independent math and computer-science learners. It turns a 6–12 week study plan into an inspectable agreement: define the syllabus slice, link rigorous problems, state the evidence and rubric up front, collect a human reviewer response, then export a cryptographically integrity-sealed completion packet.
 
-See `.factory/brief.json` for the researched problem this solves and `.factory/design.md` for the visual system.
+It deliberately does not issue credentials, grade proofs, proctor work, or redistribute exercises. Peer review is always labelled non-accredited.
 
-## Develop
+Live: <https://self-study-checkpoints.sociobot.in>
 
-```
-npm install
+## What the v1 does
+
+- Saves multiple checkpoint plans locally with no account or tracking.
+- Enforces the intended 42–84 day planning window.
+- Builds linked proof, code, or mixed-evidence prompts with explicit success criteria.
+- Produces a private-by-possession review link or portable JSON request.
+- Gives reviewers a focused rubric and exports their checksum-protected response.
+- Imports that response, requires evidence for every problem, and exports an ECDSA P-256 sealed JSON packet.
+- Verifies exported packet integrity in the browser.
+- Works after the first visit without a network connection via a small service worker.
+- Includes privacy and terms pages at `/privacy` and `/terms`.
+
+## Run locally
+
+Requires Node.js 20 or newer.
+
+```sh
+npm ci
 npm run dev
-npm test
-npm run build   # -> dist/
 ```
+
+Vite prints the local URL. User data remains in that browser profile’s local storage.
+
+## Test and build
+
+Playwright 1.58.2 is pinned. The factory image includes its Chromium build; elsewhere, run `npx playwright install chromium` once.
+
+```sh
+npm test
+npm run build
+```
+
+The exact deploy command is `npm run build`. It writes the static site to `dist/`, with `dist/index.html` at the root. `public/staticwebapp.config.json` supplies Azure Static Web Apps navigation fallback and security headers.
+
+## Privacy and packet trust
+
+Plans and private signing material stay in local storage. A review link contains an encoded copy of the plan, so possession grants access; use the downloadable request when a long URL is inconvenient. Completion packet signatures detect changes after export but do not verify a learner’s identity, authorship, mastery, or institutional approval.
+
+The researched brief is in [`.factory/brief.json`](.factory/brief.json), the visual system and original image provenance are in [`.factory/design.md`](.factory/design.md), and release verification is in [`.factory/handoff.md`](.factory/handoff.md).
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).

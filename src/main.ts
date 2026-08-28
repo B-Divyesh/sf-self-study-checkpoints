@@ -160,8 +160,9 @@ function renderApp(): string {
         <p class="trust-line">Free · local-first · no account · no automated proof grading</p>
       </div>
       <picture class="hero-art">
-        <source media="(max-width: 760px)" srcset="/assets/checkpoint-cassette-768.webp">
-        <img src="/assets/checkpoint-cassette-1280.webp" srcset="/assets/checkpoint-cassette-768.webp 768w, /assets/checkpoint-cassette-1280.webp 1280w" sizes="(max-width: 760px) 100vw, 58vw" width="1280" height="853" fetchpriority="high" decoding="async" alt="A transparent cassette, graph-paper review slip, pencil, and tape check mark arranged on a study desk">
+        <source type="image/avif" srcset="/assets/checkpoint-cassette-768.avif 768w, /assets/checkpoint-cassette-1280.avif 1280w" sizes="(max-width: 760px) 100vw, 58vw">
+        <source type="image/webp" srcset="/assets/checkpoint-cassette-768.webp 768w, /assets/checkpoint-cassette-1280.webp 1280w" sizes="(max-width: 760px) 100vw, 58vw">
+        <img src="/assets/checkpoint-cassette-1280.jpg" width="1280" height="853" fetchpriority="high" decoding="async" alt="A transparent cassette, graph-paper review slip, pencil, and tape check mark arranged on a study desk">
       </picture>
     </section>
     <section class="principles" aria-label="How it works">

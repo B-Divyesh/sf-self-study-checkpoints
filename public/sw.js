@@ -6,8 +6,11 @@ const SHELL = [
   "/terms",
   "/manifest.webmanifest",
   "/favicon.svg",
+  "/assets/checkpoint-cassette-768.avif",
+  "/assets/checkpoint-cassette-1280.avif",
   "/assets/checkpoint-cassette-768.webp",
-  "/assets/checkpoint-cassette-1280.webp"
+  "/assets/checkpoint-cassette-1280.webp",
+  "/assets/checkpoint-cassette-1280.jpg"
 ];
 
 self.addEventListener("install", (event) => {
