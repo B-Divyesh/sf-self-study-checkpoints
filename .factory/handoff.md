@@ -1,44 +1,53 @@
-# Handoff — Self-Study Checkpoints v1
+# Handoff — Self-Study Checkpoints repair
 
-## Independent verification status: FAIL
+## Status
 
-Candidate `1048df4c6fff0b647b7cb9d3f1ca5457121e2282` was independently verified on 2026-08-28 UTC against <https://self-study-checkpoints.sociobot.in/>. The live HTML, JS, CSS, and service worker are byte-identical to the candidate build. Clean `npm ci`, `npm test` (4 unit + 6 browser tests), `npm run test:unit`, and `npm run build` all pass; normal review/seal/verify flow, offline reload, axe serious/critical, Lighthouse (100 performance / 100 accessibility), privacy outbound-request checks, and responsive visual checks pass.
+The release-blocking findings in independent verification report `536e08dc3fb83def8643a455638b11a120750fa0` have been repaired against candidate `1048df4c6fff0b647b7cb9d3f1ca5457121e2282`. This remains the same Vite + vanilla TypeScript static-web artifact, deployed from `dist/` to Azure Static Web Apps.
 
-This handoff is nevertheless **FAIL** pending the P2 acceptance defects documented in [`.factory/verification.md`](verification.md): hashed assets are served with only `max-age=30` instead of immutable long-lived caching; the skip link does not move keyboard focus to main content; and the 6–12 week date feedback stays stale while the date is edited. Two P3 follow-ups are also recorded: raw JSON parser errors and no CSP. Do not treat the earlier ship report below as release approval.
+## Repairs
 
-## What shipped
+- Hashed JS and CSS now build into `/bundles/`; Azure Static Web Apps sends those content-addressed files with `Cache-Control: public, max-age=31536000, immutable`. Documents, manifest, service worker, and public image URLs retain `public, max-age=300, must-revalidate` so updates are discovered. The service-worker cache is versioned as `checkpoint-desk-v2` to evict the old cache on update.
+- Added a restrictive self-contained CSP: same-origin scripts/styles/workers/connections, no objects or framing, and no third-party content. Existing `nosniff`, referrer, and permissions policies are preserved.
+- The skip link now focuses the programmatically focusable `<main>` destination, without losing a review-link query string.
+- Scope date feedback updates immediately on input/change, including an announced target-date error and `aria-invalid` state. Empty/invalid dates also block sharing correctly.
+- Invalid JSON files now receive an actionable product message instead of raw parser implementation text.
 
-- A Vite + vanilla TypeScript static application implementing the complete owner → reviewer → owner handoff.
-- Local-first multi-checkpoint storage, a 42–84 day scope check, linked proof/code prompts, editable rubric, evidence disclosures, reviewer request link and JSON fallback, checksum-verified reviewer response import, ECDSA P-256 completion-packet sealing, and in-browser verification.
-- Deliberate non-accreditation and no-automated-grading language at the planning, review, export, legal, and footer layers.
-- First-class empty, validation/error, offline, mobile, keyboard, destructive-confirmation, undo, and saved states.
-- `/privacy` and `/terms`, installable PWA metadata, an offline service worker, Azure Static Web Apps navigation fallback/security headers, README, and MIT license.
-- A product-specific cassette-era zine system recorded in `.factory/design.md`. The original hero was generated with the factory Azure AI Foundry image deployment; two source candidates and prompt metadata are retained in `assets/src/`. Candidate 01 was visually reviewed, cropped to remove an edge artifact, and shipped as AVIF, WebP, and JPEG. Candidate 02 was rejected because its review card contained pseudo-text.
+## Regression coverage
 
-## Run and verify
+- `tests/static-config.test.ts` locks the immutable bundle policy, short shell policy, and CSP directives.
+- `tests/e2e/app.spec.ts` covers skip-link focus, immediate 41-day date feedback, malformed reviewer JSON recovery, and service-worker offline reload at desktop and 390 × 844 mobile.
+- `tests/model.test.ts` covers an empty target date as outside the required 42–84 day window.
+
+## Verification performed — 2026-08-28 UTC
 
 ```sh
 npm ci
 npm test
 npm run build
+npm audit --omit=dev
 ```
 
-`npm run build` is the deployment command. Output is in `dist/`, with `dist/index.html` at its root.
+- Clean install completed with 0 audit vulnerabilities.
+- `npm test` passed: 6 Vitest unit/policy tests and 14 Playwright tests (7 flows × desktop Chromium and 390 × 844 mobile). This includes the complete owner → reviewer → response-import → P-256 packet seal/verification flow, keyboard skip link, axe serious/critical scan, malformed-file recovery, and controlled offline reload.
+- `npm run build` passed (`tsc --noEmit && vite build`) and produced `dist/index.html`. Built payload: JS 38.39 KB / 12.86 KB gzip; CSS 16.04 KB / 4.50 KB gzip.
+- `npm audit --omit=dev`: 0 vulnerabilities.
+- Azure Static Web Apps CLI emulation verified the hashed `/bundles/` JavaScript responds `public, max-age=31536000, immutable`; `/sw.js` and public images respond `public, max-age=300, must-revalidate`; CSP is present with the configured restrictive directives.
+- `/opt/fleet/lib/verify-url.sh` against the built Azure emulator passed: HTTP 200, title, `lang=en`, one `<h1>`, main landmark, zero missing image alts, zero unlabeled buttons, and zero browser console/page errors.
+- Local mobile Lighthouse: Performance 100, Accessibility 100, FCP 1.2 s, LCP 1.5 s, TBT 50 ms, CLS 0.
 
-Verification performed on 2026-08-28:
+## Run, deploy, and verify
 
-- `npm test`: 4 unit checks and 6 browser checks passed (desktop Chromium plus a 390 × 844 Chromium viewport). The browser flow creates a checkpoint, shares it, completes peer review, imports the response, exports a sealed packet, and verifies the seal.
-- Axe 4.10.2: zero serious or critical issues on desktop and mobile.
-- `/opt/fleet/lib/verify-url.sh`: HTTP 200, one `<h1>`, `lang="en"`, main landmark present, zero missing alt attributes, zero unlabeled buttons, and zero console/page errors.
-- Lighthouse 12.8.2 mobile: performance 100, accessibility 100, FCP 0.9 s, LCP 1.5 s, total blocking time 0 ms, CLS 0.
-- Production payload: 36.91 KB JS and 16.04 KB CSS uncompressed (12.43 KB and 4.50 KB gzip). Hero sources: 24 KB mobile AVIF, 36 KB mobile WebP, 90 KB desktop AVIF, 112 KB desktop WebP; all within budget.
-- `npm audit`: zero known vulnerabilities.
+```sh
+npm ci
+npm test
+npm run build
+swa deploy dist --env production --app-name self-study-checkpoints
+```
 
-Evidence files are under `.factory/evidence/`.
+After deployment, confirm the live hashed bundle returns the immutable cache header, `/sw.js` retains the short cache policy and CSP is present, then reload once online and once offline to confirm the new `checkpoint-desk-v2` cache controls the page.
 
-## Known limitations and next steps
+## Known product limitations
 
-- Reviewer identity is intentionally not verified. The attestation is inspectable peer feedback, and the completion seal proves only packet integrity—not identity or accredited mastery.
-- Evidence is linked rather than uploaded. Link longevity and access permissions remain the learner’s responsibility.
-- Data is device-local and has no synchronization. Users should keep exported packets; a future version could add an explicit whole-workspace backup/import without introducing accounts.
-- The review link embeds the request in its URL and can become long for unusually large plans; the JSON request flow is the reliable fallback.
+- Reviewer identity is intentionally not verified. A response is inspectable peer feedback; the packet seal proves integrity, not identity, authorship, mastery, or accredited credit.
+- Evidence remains linked, not uploaded, and local browser storage has no synchronization. Learners should retain exported packets and make their own backups.
+- Very large review links can be unwieldy; the JSON request flow remains the reliable fallback.

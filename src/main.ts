@@ -12,6 +12,7 @@ import {
   requestFromCheckpoint,
   sha256,
   uid,
+  durationDays,
   validateCheckpoint,
   verifyCompletionPacket
 } from "./model";
@@ -130,7 +131,7 @@ function render(): void {
 function renderLegal(path: string): string {
   const privacy = path === "/privacy";
   document.title = `${privacy ? "Privacy" : "Terms"} — Self-Study Checkpoints`;
-  return `<main id="main" class="legal-page">
+  return `<main id="main" class="legal-page" tabindex="-1">
     <p class="eyebrow">Plain-language ${privacy ? "privacy note" : "terms"}</p>
     <h1>${privacy ? "Your study record is yours." : "A planning tool, not a credential."}</h1>
     <p class="lede">Effective 28 August 2026</p>
@@ -150,7 +151,7 @@ function renderLegal(path: string): string {
 function renderApp(): string {
   document.title = "Self-Study Checkpoints — evidence for independent learning";
   const active = activeCheckpoint();
-  return `<main id="main">
+  return `<main id="main" tabindex="-1">
     <section class="hero" aria-labelledby="page-title">
       <div class="hero-copy">
         <p class="eyebrow">Independent study, made inspectable</p>
@@ -225,8 +226,19 @@ function field(label: string, name: keyof Checkpoint, value: string, options: { 
   </div>`;
 }
 
+function dateWindow(checkpoint: Checkpoint): { days: number; invalid: boolean; message: string } {
+  const rawDays = durationDays(checkpoint.startDate, checkpoint.targetDate);
+  const days = Number.isFinite(rawDays) ? Math.max(0, rawDays) : 0;
+  const invalid = !Number.isFinite(rawDays) || days < 42 || days > 84;
+  return {
+    days,
+    invalid,
+    message: invalid ? "set a target between 42 and 84 days." : "inside the recommended 6–12 week window."
+  };
+}
+
 function renderScope(checkpoint: Checkpoint, errors: Record<string, string>): string {
-  const days = Math.max(0, Math.round((new Date(`${checkpoint.targetDate}T00:00:00Z`).getTime() - new Date(`${checkpoint.startDate}T00:00:00Z`).getTime()) / 86_400_000));
+  const window = dateWindow(checkpoint);
   return `<div class="sheet-heading"><p class="track-label">Track 01 / Scope</p><h3>Name the claim you want to defend.</h3><p>Keep the slice narrow enough to assess deeply in one sitting.</p></div>
     <div class="form-grid">
       ${field("Learner name", "learnerName", checkpoint.learnerName, { required: true, error: errors.learnerName })}
@@ -235,9 +247,13 @@ function renderScope(checkpoint: Checkpoint, errors: Record<string, string>): st
       ${field("Observable outcome", "goal", checkpoint.goal, { required: true, textarea: true, hint: "What should you be able to prove, explain, or build without hidden grading?", error: errors.goal })}
       <div class="date-pair">
         ${field("Start date", "startDate", checkpoint.startDate, { type: "date", required: true })}
-        ${field("Target date", "targetDate", checkpoint.targetDate, { type: "date", required: true, error: errors.targetDate })}
+        <div class="field ${errors.targetDate ? "has-error" : ""}">
+          <label for="field-targetDate">Target date <span aria-hidden="true">*</span></label>
+          <input id="field-targetDate" data-field="targetDate" type="date" value="${escapeHtml(checkpoint.targetDate)}" required aria-describedby="date-window-error" aria-invalid="${errors.targetDate ? "true" : "false"}">
+        </div>
       </div>
-      <p class="duration-note ${days < 42 || days > 84 ? "warning" : "good"}"><strong>${days || "—"} days</strong> ${days >= 42 && days <= 84 ? "— inside the recommended 6–12 week window." : "— set a target between 42 and 84 days."}</p>
+      <p class="duration-note ${window.invalid ? "warning" : "good"}" id="duration-note"><strong>${window.days || "—"} days</strong> — ${window.message}</p>
+      <p class="field-error" id="date-window-error" role="alert" ${errors.targetDate ? "" : "hidden"}>${escapeHtml(errors.targetDate || "")}</p>
     </div>`;
 }
 
@@ -307,7 +323,7 @@ function stepComplete(checkpoint: Checkpoint, index: number): boolean {
 
 function renderReviewer(reviewRequest: ReviewRequest): string {
   document.title = `Review ${reviewRequest.title} — Self-Study Checkpoints`;
-  return `<main id="main" class="review-page">
+  return `<main id="main" class="review-page" tabindex="-1">
     <section class="review-intro"><p class="eyebrow">Peer review request</p><h1>${escapeHtml(reviewRequest.title)}</h1><p class="lede">${escapeHtml(reviewRequest.learnerName)} asks you to inspect a self-study checkpoint in <strong>${escapeHtml(reviewRequest.topic)}</strong>.</p><div class="noncredential-note"><strong>This is not an accredited assessment.</strong> Your response is a transparent peer opinion. The app does not verify your identity or grade the work.</div></section>
     <div class="review-layout">
       <aside class="review-brief"><p class="track-label">The agreement</p><dl><div><dt>Window</dt><dd>${formatDate(reviewRequest.startDate)} – ${formatDate(reviewRequest.targetDate)}</dd></div><div><dt>Outcome</dt><dd>${escapeHtml(reviewRequest.goal)}</dd></div><div><dt>Reviewer</dt><dd>${escapeHtml(reviewRequest.reviewerName || "Open request")}</dd></div></dl><p>${escapeHtml(reviewRequest.reviewerInstructions)}</p></aside>
@@ -356,7 +372,12 @@ async function readJsonFile(input: HTMLInputElement): Promise<unknown> {
   const file = input.files?.[0];
   if (!file) throw new Error("Choose a JSON file first.");
   if (file.size > 2_000_000) throw new Error("That file is larger than the 2 MB safety limit.");
-  return JSON.parse(await file.text());
+  try {
+    return JSON.parse(await file.text());
+  } catch {
+    const noun = input.id === "review-file" ? "reviewer response" : input.id === "request-file" ? "review request" : "completion packet";
+    throw new Error(`This file is not valid JSON. Choose the ${noun} file you downloaded, then try again.`);
+  }
 }
 
 async function handleReviewSubmit(form: HTMLFormElement): Promise<void> {
@@ -415,6 +436,26 @@ function updateCheckpointField(target: HTMLInputElement | HTMLTextAreaElement | 
   }
   checkpoint.updatedAt = new Date().toISOString();
   saveCheckpoints();
+  if (fieldName === "startDate" || fieldName === "targetDate") updateDateWindowFeedback(checkpoint);
+}
+
+function updateDateWindowFeedback(checkpoint: Checkpoint): void {
+  const window = dateWindow(checkpoint);
+  const note = document.querySelector<HTMLElement>("#duration-note");
+  const error = document.querySelector<HTMLElement>("#date-window-error");
+  const target = document.querySelector<HTMLInputElement>("#field-targetDate");
+  if (note) {
+    note.className = `duration-note ${window.invalid ? "warning" : "good"}`;
+    note.innerHTML = `<strong>${window.days || "—"} days</strong> — ${window.message}`;
+  }
+  if (error) {
+    error.hidden = !window.invalid;
+    error.textContent = window.invalid ? "Choose a target 6–12 weeks (42–84 days) after the start." : "";
+  }
+  if (target) {
+    target.setAttribute("aria-invalid", String(window.invalid));
+    target.closest(".field")?.classList.toggle("has-error", window.invalid);
+  }
 }
 
 document.addEventListener("input", (event) => {
@@ -435,6 +476,16 @@ document.addEventListener("submit", (event) => {
 });
 
 document.addEventListener("click", async (event) => {
+  const skipLink = (event.target as Element).closest<HTMLAnchorElement>(".skip-link");
+  if (skipLink) {
+    event.preventDefault();
+    const main = document.querySelector<HTMLElement>("#main");
+    if (main) {
+      history.replaceState(null, "", `${location.pathname}${location.search}#main`);
+      main.focus();
+    }
+    return;
+  }
   const button = (event.target as Element).closest<HTMLElement>("[data-action]");
   if (!button) return;
   const action = button.dataset.action;

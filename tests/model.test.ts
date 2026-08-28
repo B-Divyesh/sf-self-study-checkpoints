@@ -35,6 +35,8 @@ describe("checkpoint model", () => {
     const checkpoint = completeCheckpoint();
     checkpoint.targetDate = checkpoint.startDate;
     expect(validateCheckpoint(checkpoint).targetDate).toMatch(/42–84/);
+    checkpoint.targetDate = "";
+    expect(validateCheckpoint(checkpoint).targetDate).toMatch(/42–84/);
   });
 
   it("round-trips Unicode review requests", () => {

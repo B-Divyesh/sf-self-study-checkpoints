@@ -66,6 +66,53 @@ test("legal routes and offline-first messaging are present", async ({ page }) =>
   await expect(page.getByText("A planning tool, not a credential.")).toBeVisible();
 });
 
+test("moves skip-link focus to main content", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main");
+});
+
+test("updates the 6–12 week feedback while a target date is edited", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Start a checkpoint" }).click();
+  const startDate = await page.getByLabel("Start date").inputValue();
+  const date = new Date(`${startDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 41);
+  const invalidTarget = date.toISOString().slice(0, 10);
+
+  await page.getByLabel("Target date").fill(invalidTarget);
+
+  await expect(page.locator("#duration-note")).toContainText("41 days");
+  await expect(page.locator("#duration-note")).toContainText("set a target between 42 and 84 days");
+  await expect(page.locator("#date-window-error")).toHaveText("Choose a target 6–12 weeks (42–84 days) after the start.");
+  await expect(page.getByLabel("Target date")).toHaveAttribute("aria-invalid", "true");
+});
+
+test("explains malformed reviewer JSON without exposing parser jargon", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Start a checkpoint" }).click();
+  await page.getByRole("button", { name: /04 Packet/ }).click();
+  await page.locator("#review-file").setInputFiles({
+    name: "review.json",
+    mimeType: "application/json",
+    buffer: Buffer.from("{not json")
+  });
+  await expect(page.getByText("This file is not valid JSON. Choose the reviewer response file you downloaded, then try again.")).toBeVisible();
+  await expect(page.getByText(/Expected property name/)).toHaveCount(0);
+});
+
+test("loads the cached shell offline after the service worker takes control", async ({ page, context }) => {
+  await page.goto("/");
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Make your next hard topic count.");
+  await context.setOffline(false);
+});
+
 test("has no serious or critical accessibility violations", async ({ page }) => {
   await page.goto("/");
   const results = await new AxeBuilder({ page }).analyze();

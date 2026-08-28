@@ -145,7 +145,7 @@ export function validateCheckpoint(checkpoint: Checkpoint): Record<string, strin
   if (!checkpoint.topic.trim()) errors.topic = "Name the syllabus slice being assessed.";
   if (checkpoint.goal.trim().length < 20) errors.goal = "Describe an observable outcome in at least 20 characters.";
   const days = durationDays(checkpoint.startDate, checkpoint.targetDate);
-  if (days < 42 || days > 84) errors.targetDate = "Choose a target 6–12 weeks (42–84 days) after the start.";
+  if (!Number.isFinite(days) || days < 42 || days > 84) errors.targetDate = "Choose a target 6–12 weeks (42–84 days) after the start.";
   if (!checkpoint.problems.length) errors.problems = "Add at least one problem or project prompt.";
   if (checkpoint.problems.some((problem) => !problem.title.trim() || !problem.sourceUrl.trim() || !problem.prompt.trim() || !problem.success.trim())) {
     errors.problems = "Complete the title, source link, prompt, and success criteria for every problem.";

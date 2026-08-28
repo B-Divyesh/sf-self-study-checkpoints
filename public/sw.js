@@ -1,4 +1,4 @@
-const CACHE = "checkpoint-desk-v1";
+const CACHE = "checkpoint-desk-v2";
 const SHELL = [
   "/",
   "/index.html",
