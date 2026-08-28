@@ -10,7 +10,7 @@ This is an explicitly light, ink-on-paper treatment; dark mode is not used becau
 - `paper-raised` `#FFF9EC`: forms and review slips.
 - `ink` `#191815`: near-black photocopier ink, 14.9:1 on paper.
 - `ink-muted` `#5B554B`: annotation text, 6.4:1 on paper.
-- `signal` `#D94B2B`: vermilion correction pencil and primary action; white text is not used on it. Ink text gives 4.7:1.
+- `signal` `#E76847`: vermilion correction pencil and primary action; white text is not used on it. Ink text gives more than 4.5:1.
 - `signal-soft` `#F5C94A`: highlighter and selected tabs; ink gives 11.4:1.
 - `success` `#27634B`, `warning` `#855600`, `danger` `#A22C25`: status inks, paired with words/icons rather than color alone.
 - `night` `#292722`: cassette wells and footer surface; paper text gives 12.4:1.

@@ -1,0 +1,9 @@
+{
+  "name": "Self-Study Checkpoints",
+  "short_name": "Checkpoints",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f2e9d8",
+  "theme_color": "#f2e9d8",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
