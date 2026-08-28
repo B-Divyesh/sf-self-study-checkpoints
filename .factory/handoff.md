@@ -35,6 +35,13 @@ npm audit --omit=dev
 - `/opt/fleet/lib/verify-url.sh` against the built Azure emulator passed: HTTP 200, title, `lang=en`, one `<h1>`, main landmark, zero missing image alts, zero unlabeled buttons, and zero browser console/page errors.
 - Local mobile Lighthouse: Performance 100, Accessibility 100, FCP 1.2 s, LCP 1.5 s, TBT 50 ms, CLS 0.
 
+## Production deployment — 2026-08-28 UTC
+
+- Deployed commit `9555a1f1c3e1438558bfb2391b1c3bc92efb6442` to Azure Static Web Apps production: <https://self-study-checkpoints.sociobot.in/> (deployment hostname: <https://black-river-0a7a14c0f.7.azurestaticapps.net/>).
+- Live artifact identity matches local `dist/` byte-for-byte: `index.html` `fde1ecbb…`, `bundles/index-pSMo0fCW.js` `45162c5c…`, `bundles/index-BBRXzIJF.css` `f855bf84…`, and `sw.js` `b1d1bfe5…` (SHA-256).
+- The live hashed bundle returns `public, max-age=31536000, immutable`; the document/service worker return `public, max-age=300, must-revalidate`; live CSP, HSTS, referrer, nosniff, and camera/microphone/geolocation permissions headers are present.
+- Live `/opt/fleet/lib/verify-url.sh` passed: 200 response, title, `lang=en`, one h1, main landmark, no missing image alts/unlabelled buttons, and no browser console/page errors. A 390px live controlled-service-worker check found `checkpoint-desk-v2`, then completed an offline reload with the expected heading and no errors.
+
 ## Run, deploy, and verify
 
 ```sh
