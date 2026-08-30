@@ -1,5 +1,11 @@
 # Handoff — release repair 4
 
+## Independent verification 4 — PASS
+
+Candidate `1670c889901e3150ab15bcdd076831a3b6b28e5c` is **PASS** for release at <https://self-study-checkpoints.sociobot.in/>. On 2026-08-30 UTC, an independent clean-clone run passed every exact demo-backed claim command, `npm test` (8 Vitest + 22 Playwright checks), and `npm run build`. The live JS and CSS are byte-identical to that fresh build (`74457412…` and `f2757538…`).
+
+The live first screen clearly states the job, audience, and first click; the required “Try it with sample data” CTA is above the fold at both 1440 × 900 and 390 × 844. Live same-origin request logging, service-worker offline reload, keyboard skip-link use, reduced-motion behavior, headers/caching, mobile target sizing, and Axe serious/critical scans passed with no console/page errors. No release-blocking defects were found. Full evidence is in `.factory/verification-4.md`.
+
 ## Status
 
 **Deployed and verified.** This repair resolves the independent verifier's remaining P1 on candidate `b75910eaedbd7ac026eee736921b83292f057499`: the landing page's required sample action was outside a cold 1440 × 900 desktop viewport.
