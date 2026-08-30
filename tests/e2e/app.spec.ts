@@ -70,7 +70,7 @@ test("keeps every visible demo and reviewer control at least 44 by 44 CSS pixels
     expect(undersized).toEqual([]);
   }
 
-  for (const route of ["/demo", "/privacy", "/terms", "/404"]) {
+  for (const route of ["/", "/demo", "/privacy", "/terms", "/404"]) {
     await page.goto(route);
     await expectTargetsToFit();
   }
@@ -91,6 +91,25 @@ test("keeps every visible demo and reviewer control at least 44 by 44 CSS pixels
   const review = encodeRequest(requestFromCheckpoint(sampleCheckpoint()));
   await page.goto(`/demo?review=${review}`);
   await expectTargetsToFit();
+});
+
+test("keeps the primary sample action visible without scrolling at 1440 by 900", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  const bounds = await page.locator('a.button.primary[href="/demo"]').evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      top: rect.top,
+      bottom: rect.bottom,
+      viewportHeight: window.innerHeight,
+      scrollY: window.scrollY
+    };
+  });
+
+  expect(bounds.scrollY).toBe(0);
+  expect(bounds.top).toBeGreaterThanOrEqual(0);
+  expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight);
 });
 
 test("legal routes and offline-first messaging are present", async ({ page }) => {

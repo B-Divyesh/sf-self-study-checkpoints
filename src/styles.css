@@ -185,6 +185,13 @@ h4 { font-size: 1.25rem; }
 .button:disabled:hover { transform: none; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 16px; }
 
+/* Keep the first action in a cold desktop viewport without changing the mobile stack. */
+@media (min-width: 761px) {
+  .hero-copy { padding-top: 64px; padding-bottom: 64px; }
+  .hero h1 { font-size: clamp(3rem, 5.5vw, 5.5rem); }
+  .hero .lede { margin-bottom: 24px; }
+}
+
 .principles {
   padding: 20px clamp(24px, 7vw, 104px);
   display: grid;
