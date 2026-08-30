@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { encodeRequest, requestFromCheckpoint, sampleCheckpoint } from "../../src/model";
 
 test("@claim:workspace-planning @claim:human-review @claim:sealed-packet builds, reviews, exports, and verifies a checkpoint", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -50,29 +51,46 @@ test("@claim:workspace-planning @claim:human-review @claim:sealed-packet builds,
   await expect(page.getByText(/Seal valid:/)).toBeVisible();
 });
 
-test("keeps every visible demo control at least 44 by 44 CSS pixels at 390px", async ({ page }) => {
+test("keeps every visible demo and reviewer control at least 44 by 44 CSS pixels at 390px", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+
+  async function expectTargetsToFit(): Promise<void> {
+    const undersized = await page.locator("a, button, input:not([type=file]), textarea, select").evaluateAll((controls) => controls
+      .filter((control) => !control.classList.contains("visually-hidden"))
+      .map((control) => {
+        const rect = control.getBoundingClientRect();
+        return {
+          control: control.getAttribute("aria-label") || control.textContent?.trim() || control.tagName.toLowerCase(),
+          width: rect.width,
+          height: rect.height
+        };
+      })
+      .filter(({ width, height }) => width < 44 || height < 44));
+
+    expect(undersized).toEqual([]);
+  }
+
+  for (const route of ["/demo", "/privacy", "/terms", "/404"]) {
+    await page.goto(route);
+    await expectTargetsToFit();
+  }
+
   await page.goto("/demo");
-
-  const undersized = await page.locator("a, button, input:not([type=file]), textarea, select").evaluateAll((controls) => controls
-    .filter((control) => !control.classList.contains("visually-hidden"))
-    .map((control) => {
-      const rect = control.getBoundingClientRect();
-      return {
-        control: control.getAttribute("aria-label") || control.textContent?.trim() || control.tagName.toLowerCase(),
-        width: rect.width,
-        height: rect.height
-      };
-    })
-    .filter(({ width, height }) => width < 44 || height < 44));
-
-  expect(undersized).toEqual([]);
   await expect(page.locator(".wordmark")).toHaveJSProperty("offsetWidth", 44);
   await expect(page.locator(".wordmark")).toHaveJSProperty("offsetHeight", 44);
   for (const link of await page.locator("footer a").all()) {
     await expect(link).toHaveJSProperty("offsetHeight", 44);
     expect(await link.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(44);
   }
+
+  for (const step of ["02 Problems", "03 Review", "04 Packet"]) {
+    await page.getByRole("button", { name: step }).click();
+    await expectTargetsToFit();
+  }
+
+  const review = encodeRequest(requestFromCheckpoint(sampleCheckpoint()));
+  await page.goto(`/demo?review=${review}`);
+  await expectTargetsToFit();
 });
 
 test("legal routes and offline-first messaging are present", async ({ page }) => {

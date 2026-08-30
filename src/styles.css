@@ -107,7 +107,7 @@ svg { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-li
 .site-header nav { display: flex; gap: 12px; align-items: center; }
 .quiet-button, .quiet-link, .text-button {
   min-width: 44px;
-  min-height: 44px;
+  min-height: 45px;
   padding: 8px 2px;
   display: inline-flex;
   align-items: center;
