@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test("builds, reviews, exports, and verifies a checkpoint", async ({ page, context }) => {
+test("@claim:workspace-planning @claim:human-review @claim:sealed-packet builds, reviews, exports, and verifies a checkpoint", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
 
@@ -103,18 +103,51 @@ test("explains malformed reviewer JSON without exposing parser jargon", async ({
   await expect(page.getByText(/Expected property name/)).toHaveCount(0);
 });
 
-test("loads the cached shell offline after the service worker takes control", async ({ page, context }) => {
-  await page.goto("/");
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.reload();
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Make your next hard topic count.");
-  await context.setOffline(false);
+test("@claim:offline-reload loads the cached shell offline after the service worker takes control", async ({ browser }) => {
+  const context = await browser.newContext({ baseURL: "http://127.0.0.1:4173" });
+  const page = await context.newPage();
+  try {
+    await page.goto("/demo");
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload();
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Inspect a checkpoint already in progress.");
+  } finally {
+    await context.close();
+  }
 });
 
-test("has no serious or critical accessibility violations", async ({ page }) => {
+test("@claim:demo-sandbox keeps sample changes out of real storage", async ({ page }) => {
   await page.goto("/");
-  const results = await new AxeBuilder({ page }).analyze();
-  expect(results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact || ""))).toEqual([]);
+  await page.evaluate(() => localStorage.setItem("self-study-checkpoints:v1", JSON.stringify([{ marker: "real-data" }])));
+  await page.goto("/demo");
+  await expect(page.getByText("Demo — sample data, nothing is saved")).toBeVisible();
+  await expect(page.getByLabel("Checkpoint title")).toHaveValue("Finite groups checkpoint");
+  await page.getByLabel("Checkpoint title").fill("Temporary demo edit");
+  await page.getByRole("button", { name: "Reset demo" }).click();
+  await expect(page.getByLabel("Checkpoint title")).toHaveValue("Finite groups checkpoint");
+  expect(await page.evaluate(() => localStorage.getItem("self-study-checkpoints:v1"))).toBe('[{"marker":"real-data"}]');
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("demo:")))).toEqual([]);
+});
+
+test("@claim:local-only @claim:free-no-account keeps the complete demo flow on the site origin", async ({ page }) => {
+  const origins = new Set<string>();
+  page.on("request", (request) => origins.add(new URL(request.url()).origin));
+  await page.goto("/demo");
+  await page.getByLabel("Checkpoint title").fill("Local-only edit");
+  await page.getByRole("button", { name: /02 Problems/ }).click();
+  await page.getByRole("button", { name: /03 Review/ }).click();
+  await page.getByRole("button", { name: /04 Packet/ }).click();
+  expect([...origins]).toEqual(["http://127.0.0.1:4173"]);
+});
+
+test("has no serious or critical accessibility violations on public routes", async ({ page }) => {
+  for (const route of ["/", "/demo", "/privacy", "/terms", "/404"]) {
+    await page.goto(route);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact || "")), route).toEqual([]);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    await expect(page.locator("main")).toHaveCount(1);
+  }
 });

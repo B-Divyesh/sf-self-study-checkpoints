@@ -1,60 +1,52 @@
-# Handoff — Self-Study Checkpoints repair
+# Handoff — Self-Study Checkpoints repair 2
 
 ## Status
 
-The release-blocking findings in independent verification report `536e08dc3fb83def8643a455638b11a120750fa0` have been repaired against candidate `1048df4c6fff0b647b7cb9d3f1ca5457121e2282`. This remains the same Vite + vanilla TypeScript static-web artifact, deployed from `dist/` to Azure Static Web Apps.
+Candidate `1b0ca2f46633aac450f7b06c47864fdba434e654` contained the earlier application repairs but its handoff used the obsolete direct command `swa deploy ... --app-name self-study-checkpoints`. That bypassed the current fleet wrapper and named an unprefixed app instead of the work-order resource `sf-self-study-checkpoints`.
 
-## Repairs
+The repair preserves the Vite + vanilla TypeScript static-web product and `dist/` artifact. The deployment runbook now uses `/opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist`. A unit regression requires that command and rejects the obsolete target.
 
-- Hashed JS and CSS now build into `/bundles/`; Azure Static Web Apps sends those content-addressed files with `Cache-Control: public, max-age=31536000, immutable`. Documents, manifest, service worker, and public image URLs retain `public, max-age=300, must-revalidate` so updates are discovered. The service-worker cache is versioned as `checkpoint-desk-v2` to evict the old cache on update.
-- Added a restrictive self-contained CSP: same-origin scripts/styles/workers/connections, no objects or framing, and no third-party content. Existing `nosniff`, referrer, and permissions policies are preserved.
-- The skip link now focuses the programmatically focusable `<main>` destination, without losing a review-link query string.
-- Scope date feedback updates immediately on input/change, including an announced target-date error and `aria-invalid` state. Empty/invalid dates also block sharing correctly.
-- Invalid JSON files now receive an actionable product message instead of raw parser implementation text.
+## Product and acceptance repairs
 
-## Regression coverage
+- Added `/demo` with a realistic finite-groups checkpoint, a persistent demo banner, reset/start-real controls, and memory-only state that never reads or writes the real local-storage key.
+- Added `.factory/claims.json`; every listed claim has one tagged browser test and was run from the documented demo or clean workflow.
+- Added a real 404 response page, robots/sitemap files, canonical/Open Graph/Twitter metadata, a 1200×630 social card, and a 180×180 touch icon derived from the original cassette art.
+- Replaced the metaphorical first-screen headline with a direct job statement and recorded the word-count audit in `.factory/copy-audit.md`.
+- Expanded axe coverage across `/`, `/demo`, `/privacy`, `/terms`, and `/404`. This found a transient contrast failure during the sheet’s opacity entrance; the opacity fade was removed so text remains compliant through the motion.
+- Updated the offline shell to cache demo and error routes under `checkpoint-desk-v3`.
 
-- `tests/static-config.test.ts` locks the immutable bundle policy, short shell policy, and CSP directives.
-- `tests/e2e/app.spec.ts` covers skip-link focus, immediate 41-day date feedback, malformed reviewer JSON recovery, and service-worker offline reload at desktop and 390 × 844 mobile.
-- `tests/model.test.ts` covers an empty target date as outside the required 42–84 day window.
+## Local verification — 2026-08-30 UTC
 
-## Verification performed — 2026-08-28 UTC
-
-```sh
-npm ci
-npm test
-npm run build
-npm audit --omit=dev
-```
-
-- Clean install completed with 0 audit vulnerabilities.
-- `npm test` passed: 6 Vitest unit/policy tests and 14 Playwright tests (7 flows × desktop Chromium and 390 × 844 mobile). This includes the complete owner → reviewer → response-import → P-256 packet seal/verification flow, keyboard skip link, axe serious/critical scan, malformed-file recovery, and controlled offline reload.
-- `npm run build` passed (`tsc --noEmit && vite build`) and produced `dist/index.html`. Built payload: JS 38.39 KB / 12.86 KB gzip; CSS 16.04 KB / 4.50 KB gzip.
-- `npm audit --omit=dev`: 0 vulnerabilities.
-- Azure Static Web Apps CLI emulation verified the hashed `/bundles/` JavaScript responds `public, max-age=31536000, immutable`; `/sw.js` and public images respond `public, max-age=300, must-revalidate`; CSP is present with the configured restrictive directives.
-- `/opt/fleet/lib/verify-url.sh` against the built Azure emulator passed: HTTP 200, title, `lang=en`, one `<h1>`, main landmark, zero missing image alts, zero unlabeled buttons, and zero browser console/page errors.
-- Local mobile Lighthouse: Performance 100, Accessibility 100, FCP 1.2 s, LCP 1.5 s, TBT 50 ms, CLS 0.
-
-## Production deployment — 2026-08-28 UTC
-
-- Deployed commit `9555a1f1c3e1438558bfb2391b1c3bc92efb6442` to Azure Static Web Apps production: <https://self-study-checkpoints.sociobot.in/> (deployment hostname: <https://black-river-0a7a14c0f.7.azurestaticapps.net/>).
-- Live artifact identity matches local `dist/` byte-for-byte: `index.html` `fde1ecbb…`, `bundles/index-pSMo0fCW.js` `45162c5c…`, `bundles/index-BBRXzIJF.css` `f855bf84…`, and `sw.js` `b1d1bfe5…` (SHA-256).
-- The live hashed bundle returns `public, max-age=31536000, immutable`; the document/service worker return `public, max-age=300, must-revalidate`; live CSP, HSTS, referrer, nosniff, and camera/microphone/geolocation permissions headers are present.
-- Live `/opt/fleet/lib/verify-url.sh` passed: 200 response, title, `lang=en`, one h1, main landmark, no missing image alts/unlabelled buttons, and no browser console/page errors. A 390px live controlled-service-worker check found `checkpoint-desk-v2`, then completed an offline reload with the expected heading and no errors.
-
-## Run, deploy, and verify
+Exact clean command:
 
 ```sh
-npm ci
-npm test
-npm run build
-swa deploy dist --env production --app-name self-study-checkpoints
+npm ci && npm test && npm run build
 ```
 
-After deployment, confirm the live hashed bundle returns the immutable cache header, `/sw.js` retains the short cache policy and CSP is present, then reload once online and once offline to confirm the new `checkpoint-desk-v2` cache controls the page.
+- Pass: clean install, 0 audit vulnerabilities.
+- Pass: 8 Vitest unit/policy/regression checks.
+- Pass: 18 Playwright checks across desktop Chromium and 390×844 mobile. Coverage includes the complete owner → reviewer → checksum import → P-256 seal/verify workflow, keyboard skip focus, form errors, legal/404 routes, demo reset/isolation, same-origin privacy, offline reload in its own browser context, and axe serious/critical scans.
+- Pass: every exact command in `.factory/claims.json`.
+- Pass: `npm run build`; `dist/index.html` exists. Initial JS is 41.84 KB / 13.90 KB gzip; CSS is 17.04 KB / 4.68 KB gzip.
+- Pass: Azure Static Web Apps emulator returns one-year immutable caching for `/bundles/*`, five-minute revalidation for documents and `sw.js`, and the restrictive CSP/security headers.
+- Pass: `/opt/fleet/lib/verify-url.sh` against the emulator: HTTP 200, title, `lang=en`, one h1, main landmark, no missing alt or button labels, and no console/page errors.
+- Pass: mobile Lighthouse 12.8.2 — Performance 100, Accessibility 100, Best Practices 100, SEO 100; FCP 1.2 s, LCP 1.6 s, TBT 0 ms, CLS 0.
+- Pass: desktop and 390px screenshots were inspected; no overflow, clipped actions, or lost content was found.
 
-## Known product limitations
+Evidence is stored under `.factory/evidence/`.
 
-- Reviewer identity is intentionally not verified. A response is inspectable peer feedback; the packet seal proves integrity, not identity, authorship, mastery, or accredited credit.
-- Evidence remains linked, not uploaded, and local browser storage has no synchronization. Learners should retain exported packets and make their own backups.
-- Very large review links can be unwieldy; the JSON request flow remains the reliable fallback.
+## Deploy and live verification
+
+The authorized work-order command is:
+
+```sh
+/opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist
+```
+
+Production evidence will be appended after the committed repair is pushed and deployed.
+
+## Known limitations
+
+- Peer review is non-accredited and reviewer identity is not verified. The packet seal proves integrity, not identity, authorship, or mastery.
+- Evidence remains linked rather than uploaded. Browser data has no sync; learners should keep exported packets.
+- Very large review links can be unwieldy; the JSON request remains the reliable fallback.

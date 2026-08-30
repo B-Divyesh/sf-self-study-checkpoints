@@ -6,6 +6,8 @@ It deliberately does not issue credentials, grade proofs, proctor work, or redis
 
 Live: <https://self-study-checkpoints.sociobot.in>
 
+Try the isolated sample: <https://self-study-checkpoints.sociobot.in/demo>. Demo edits stay in page memory and never touch your real checkpoint storage.
+
 ## What the v1 does
 
 - Saves multiple checkpoint plans locally with no account or tracking.
@@ -16,6 +18,7 @@ Live: <https://self-study-checkpoints.sociobot.in>
 - Imports that response, requires evidence for every problem, and exports an ECDSA P-256 sealed JSON packet.
 - Verifies exported packet integrity in the browser.
 - Works after the first visit without a network connection via a small service worker.
+- Includes a one-click sample checkpoint whose edits are discarded when you leave.
 - Includes privacy and terms pages at `/privacy` and `/terms`.
 
 ## Run locally
@@ -38,7 +41,15 @@ npm test
 npm run build
 ```
 
-The exact deploy command is `npm run build`. It writes the static site to `dist/`, with `dist/index.html` at the root. `public/staticwebapp.config.json` supplies Azure Static Web Apps navigation fallback and security headers.
+The exact clean build command is `npm ci && npm test && npm run build`. It writes the static site to `dist/`, with `dist/index.html` at the root. `public/staticwebapp.config.json` supplies Azure Static Web Apps navigation fallback and security headers.
+
+Factory workers deploy only through the fleet wrapper. It resolves the allowed `sf-self-study-checkpoints` resource and its deployment token:
+
+```sh
+/opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist
+```
+
+Do not bypass the wrapper with a direct named-app CLI deployment.
 
 ## Privacy and packet trust
 

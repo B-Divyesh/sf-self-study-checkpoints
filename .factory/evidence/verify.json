@@ -1,14 +1,14 @@
 {
-  "url": "http://127.0.0.1:4173",
-  "loadMs": 526,
+  "url": "http://127.0.0.1:4280",
+  "loadMs": 628,
   "errors": [],
   "a11y": {
-    "title": "Self-Study Checkpoints — evidence for independent learning",
+    "title": "Self-Study Checkpoints — plan proof of progress",
     "lang": "en",
     "h1": 1,
     "main": true,
     "imgsMissingAlt": 0,
     "buttonsUnlabeled": 0,
-    "textLength": 872
+    "textLength": 1108
   }
 }

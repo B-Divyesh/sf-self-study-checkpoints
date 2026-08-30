@@ -133,6 +133,45 @@ export function newCheckpoint(): Checkpoint {
   };
 }
 
+export function sampleCheckpoint(): Checkpoint {
+  const checkpoint = newCheckpoint();
+  checkpoint.id = "demo-checkpoint-finite-groups";
+  checkpoint.learnerName = "Maya Chen";
+  checkpoint.title = "Finite groups checkpoint";
+  checkpoint.topic = "Groups, subgroups, homomorphisms, and quotient groups";
+  checkpoint.goal = "Prove the core isomorphism results and explain where every hypothesis is used.";
+  checkpoint.problems = [
+    {
+      id: "demo-problem-kernel",
+      title: "Kernel and image",
+      sourceUrl: "https://en.wikipedia.org/wiki/Isomorphism_theorems",
+      prompt: "Prove the first isomorphism theorem, then identify the kernel and image in one concrete example.",
+      evidenceType: "proof",
+      success: "Every map is well-defined, each implication is justified, and the example is checked."
+    },
+    {
+      id: "demo-problem-cosets",
+      title: "Cosets in code",
+      sourceUrl: "https://en.wikipedia.org/wiki/Coset",
+      prompt: "Write a small program that enumerates left cosets and compare its output with a hand-worked example.",
+      evidenceType: "mixed",
+      success: "The program handles two non-trivial groups and the written comparison explains the result."
+    }
+  ];
+  checkpoint.reviewerName = "Dr. Imani Okafor";
+  checkpoint.reviewerContact = "Study group mentor";
+  checkpoint.evidence = [
+    {
+      id: "demo-evidence-kernel",
+      problemId: "demo-problem-kernel",
+      title: "Draft proof",
+      url: "https://example.com/maya/finite-groups-proof.pdf",
+      notes: "Definitions discussed with the study group; the proof was written independently."
+    }
+  ];
+  return checkpoint;
+}
+
 export function durationDays(start: string, end: string): number {
   if (!start || !end) return 0;
   return Math.round((new Date(`${end}T00:00:00Z`).getTime() - new Date(`${start}T00:00:00Z`).getTime()) / 86_400_000);

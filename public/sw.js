@@ -1,9 +1,12 @@
-const CACHE = "checkpoint-desk-v2";
+const CACHE = "checkpoint-desk-v3";
 const SHELL = [
   "/",
   "/index.html",
   "/privacy",
   "/terms",
+  "/demo",
+  "/404",
+  "/404.html",
   "/manifest.webmanifest",
   "/favicon.svg",
   "/assets/checkpoint-cassette-768.avif",

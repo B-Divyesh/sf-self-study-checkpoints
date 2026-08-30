@@ -10,6 +10,7 @@ import {
   encodeRequest,
   newCheckpoint,
   requestFromCheckpoint,
+  sampleCheckpoint,
   sha256,
   uid,
   durationDays,
@@ -21,7 +22,8 @@ const STORAGE_KEY = "self-study-checkpoints:v1";
 const STEPS = ["Scope", "Problems", "Review", "Packet"] as const;
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
-let checkpoints = loadCheckpoints();
+const demoMode = location.pathname === "/demo";
+let checkpoints = demoMode ? [sampleCheckpoint()] : loadCheckpoints();
 let activeId = checkpoints[0]?.id || "";
 let step = 0;
 let notice = "";
@@ -38,6 +40,10 @@ function loadCheckpoints(): Checkpoint[] {
 }
 
 function saveCheckpoints(): void {
+  if (demoMode) {
+    setSaveLabel("Demo changes are temporary");
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(checkpoints));
     setSaveLabel("Saved on this device");
@@ -101,18 +107,20 @@ function shell(content: string, page: "app" | "legal" | "review" = "app"): strin
     <header class="site-header">
       <a class="wordmark" href="/" aria-label="Self-Study Checkpoints home">${svg("tape")}<span>Self-Study<br>Checkpoints</span></a>
       <nav aria-label="Utility navigation">
-        ${page === "app" ? '<button class="quiet-button" data-action="open-request">Review a request</button><button class="quiet-button" data-action="verify-packet">Verify a packet</button>' : '<a class="quiet-link" href="/">Back to builder</a>'}
+        <a class="quiet-link" href="/demo">Demo</a><a class="quiet-link" href="/privacy">Privacy</a>
+        ${page === "app" ? '<button class="quiet-button" data-action="open-request">Review a request</button><button class="quiet-button" data-action="verify-packet">Verify a packet</button>' : '<a class="quiet-link" href="/">Builder</a>'}
       </nav>
       <input class="visually-hidden" id="request-file" type="file" accept="application/json,.json" tabindex="-1" aria-label="Choose a review request file">
       <input class="visually-hidden" id="verify-file" type="file" accept="application/json,.json" tabindex="-1" aria-label="Choose a completion packet to verify">
     </header>
+    ${demoMode ? '<aside class="demo-banner" aria-label="Demo mode"><strong>Demo — sample data, nothing is saved</strong><span><button class="quiet-button" data-action="reset-demo">Reset demo</button><a class="quiet-link" href="/">Start for real</a></span></aside>' : ""}
     <div class="offline-banner" id="offline-banner" role="status" hidden>Offline — your desk still works. Changes remain on this device.</div>
     ${content}
     <div id="notice" class="notice" aria-live="polite">${escapeHtml(notice)}</div>
     <footer>
-      <div><strong>Peer reviewed, never accredited.</strong><p>Your work stays in this browser unless you export or share it.</p></div>
+      <div><strong>Plan self-study checkpoints for human review.</strong><p>Free, non-accredited, and stored on this device.</p></div>
       <nav aria-label="Legal"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="https://github.com/B-Divyesh/sf-self-study-checkpoints">Source</a></nav>
-      <p class="provenance">Hero artwork generated for this product with Azure AI Foundry. No analytics or trackers.</p>
+      <p class="provenance">Built by Param Factory · v1.0.0 · Original artwork generated with Azure AI Foundry · No analytics or trackers.</p>
     </footer>`;
 }
 
@@ -120,12 +128,26 @@ function render(): void {
   const path = location.pathname.replace(/\/$/, "") || "/";
   if (path === "/privacy" || path === "/terms") {
     root.innerHTML = shell(renderLegal(path), "legal");
+  } else if (path === "/404") {
+    root.innerHTML = shell(renderNotFound(), "legal");
   } else if (request) {
     root.innerHTML = shell(renderReviewer(request), "review");
+  } else if (demoMode) {
+    root.innerHTML = shell(renderDemo(), "app");
   } else {
     root.innerHTML = shell(renderApp(), "app");
   }
   syncNetworkState();
+}
+
+function renderNotFound(): string {
+  document.title = "Page not found — Self-Study Checkpoints";
+  return `<main id="main" class="legal-page not-found" tabindex="-1">
+    <p class="eyebrow">404</p>
+    <h1>This page is not on the study plan.</h1>
+    <p>The address may be old or incomplete. Return to the checkpoint builder.</p>
+    <p><a class="button primary" href="/">Open the builder</a></p>
+  </main>`;
 }
 
 function renderLegal(path: string): string {
@@ -149,16 +171,16 @@ function renderLegal(path: string): string {
 }
 
 function renderApp(): string {
-  document.title = "Self-Study Checkpoints — evidence for independent learning";
+  document.title = "Self-Study Checkpoints — plan proof of progress";
   const active = activeCheckpoint();
   return `<main id="main" tabindex="-1">
     <section class="hero" aria-labelledby="page-title">
       <div class="hero-copy">
-        <p class="eyebrow">Independent study, made inspectable</p>
-        <h1 id="page-title">Make your next hard topic count.</h1>
-        <p class="lede">Set a rigorous checkpoint. Hand the rubric to someone you trust. Leave with a portable record—not a pretend credential.</p>
-        <a class="button primary" href="#workbench">${active ? "Continue your checkpoint" : "Build a checkpoint"}<span aria-hidden="true"> ↓</span></a>
-        <p class="trust-line">Free · local-first · no account · no automated proof grading</p>
+        <p class="eyebrow">Self-study checkpoint builder</p>
+        <h1 id="page-title">Build proof of your self-study progress.</h1>
+        <p class="lede">For independent math and computer-science learners who need a clear checkpoint without enrolling in a course.</p>
+        <div class="hero-actions"><a class="button primary" href="/demo">Try it with sample data</a><a class="button secondary" href="#workbench">${active ? "Continue your checkpoint" : "Start your checkpoint"}</a></div>
+        <ul class="trust-line" aria-label="Product facts"><li>Free to use.</li><li>Plans stay on this device.</li><li>Review is human and non-accredited.</li></ul>
       </div>
       <picture class="hero-art">
         <source type="image/avif" srcset="/assets/checkpoint-cassette-768.avif 768w, /assets/checkpoint-cassette-1280.avif 1280w" sizes="(max-width: 760px) 100vw, 58vw">
@@ -166,10 +188,9 @@ function renderApp(): string {
         <img src="/assets/checkpoint-cassette-1280.jpg" width="1280" height="853" fetchpriority="high" decoding="async" alt="A transparent cassette, graph-paper review slip, pencil, and tape check mark arranged on a study desk">
       </picture>
     </section>
-    <section class="principles" aria-label="How it works">
-      <p><span>01</span> Define a 6–12 week syllabus slice.</p>
-      <p><span>02</span> Agree on evidence and a visible rubric.</p>
-      <p><span>03</span> Export a peer-reviewed, integrity-sealed packet.</p>
+    <section class="principles" aria-labelledby="how-title">
+      <h2 id="how-title">How it works</h2>
+      <ol><li><span>01</span> Define a 6–12 week syllabus slice.</li><li><span>02</span> Agree on evidence and a visible rubric.</li><li><span>03</span> Export a peer-reviewed, integrity-sealed packet.</li></ol>
     </section>
     <section class="workbench" id="workbench" aria-labelledby="workbench-title">
       <div class="workbench-heading">
@@ -177,6 +198,19 @@ function renderApp(): string {
         <div class="save-state"><span class="status-dot" aria-hidden="true"></span><span id="save-status">${active ? "Saved on this device" : "Nothing saved yet"}</span></div>
       </div>
       ${active ? renderWorkspace(active) : renderEmpty()}
+    </section>
+    <section class="limits" aria-labelledby="limits-title"><h2 id="limits-title">What this does not do</h2><p>It does not teach, grade proofs, verify identity, proctor work, or issue credentials. Your reviewer makes the judgment.</p></section>
+  </main>`;
+}
+
+function renderDemo(): string {
+  document.title = "Demo — Self-Study Checkpoints";
+  const active = activeCheckpoint()!;
+  return `<main id="main" tabindex="-1">
+    <section class="demo-intro"><p class="eyebrow">Sample checkpoint</p><h1>Inspect a checkpoint already in progress.</h1><p class="lede">Explore Maya’s finite-groups plan. Your changes disappear when you leave demo mode.</p></section>
+    <section class="workbench demo-workbench" id="workbench" aria-labelledby="workbench-title">
+      <div class="workbench-heading"><div><p class="eyebrow">Sample desk</p><h2 id="workbench-title">Checkpoint builder</h2></div><div class="save-state"><span class="status-dot" aria-hidden="true"></span><span id="save-status">Demo changes are temporary</span></div></div>
+      ${renderWorkspace(active)}
     </section>
   </main>`;
 }
@@ -492,6 +526,8 @@ document.addEventListener("click", async (event) => {
   const checkpoint = activeCheckpoint();
   if (action === "new-checkpoint") {
     const created = newCheckpoint(); checkpoints.unshift(created); activeId = created.id; step = 0; saveCheckpoints(); render(); location.hash = "workbench";
+  } else if (action === "reset-demo" && demoMode) {
+    checkpoints = [sampleCheckpoint()]; activeId = checkpoints[0].id; step = 0; notice = ""; render(); setNotice("Sample checkpoint reset.");
   } else if (action === "switch-checkpoint") {
     activeId = button.dataset.id || ""; step = 0; render();
   } else if (action === "delete-checkpoint" && checkpoint) {

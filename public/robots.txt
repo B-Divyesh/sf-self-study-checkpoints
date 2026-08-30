@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://self-study-checkpoints.sociobot.in/sitemap.xml
