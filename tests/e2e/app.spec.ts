@@ -3,37 +3,29 @@ import AxeBuilder from "@axe-core/playwright";
 
 test("@claim:workspace-planning @claim:human-review @claim:sealed-packet builds, reviews, exports, and verifies a checkpoint", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.goto("/");
+  await page.goto("/demo");
 
+  await expect(page).toHaveURL(/\/demo$/);
+  await expect(page.getByText("Demo — sample data, nothing is saved")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
-  await page.getByRole("button", { name: "Start a checkpoint" }).click();
-
-  await page.getByLabel("Learner name").fill("Ada Learner");
-  await page.getByLabel("Checkpoint title").fill("Finite groups checkpoint");
-  await page.getByLabel("Syllabus slice").fill("Groups, subgroups, and homomorphisms");
-  await page.getByLabel("Observable outcome").fill("Prove the core isomorphism results and explain every non-obvious step.");
-  await page.getByRole("button", { name: /Next: Problems/ }).click();
-
-  await page.getByRole("button", { name: "Add a problem" }).click();
-  await page.getByLabel("Short title").fill("Kernel and image");
-  await page.getByLabel("Source link").fill("https://example.com/algebra/problem-4");
-  await page.getByLabel("Submission prompt").fill("Prove the result, then state where every hypothesis is used.");
-  await page.getByLabel("Visible success criteria").fill("Every implication is justified and notation is defined.");
-  await page.getByRole("button", { name: /Next: Review/ }).click();
-
-  await page.getByLabel("Reviewer name").fill("Emmy Reviewer");
-  await page.getByRole("button", { name: /Next: Packet/ }).click();
-  await page.getByLabel("Evidence title").fill("Proof write-up");
-  await page.getByLabel("Public or reviewer-accessible link").fill("https://example.com/ada/proof.pdf");
-  await page.getByLabel("Disclosure and notes").fill("Discussed definitions with a study group; proof written independently.");
+  await expect(page.getByLabel("Learner name")).toHaveValue("Maya Chen");
+  await expect(page.getByLabel("Short title")).toHaveCount(0);
+  await page.getByRole("button", { name: /02 Problems/ }).click();
+  await expect(page.getByLabel("Short title").first()).toHaveValue("Kernel and image");
+  await page.getByRole("button", { name: /04 Packet/ }).click();
+  await page.getByLabel("Evidence title").nth(1).fill("Coset program and notes");
+  await page.getByLabel("Public or reviewer-accessible link").nth(1).fill("https://example.com/maya/cosets");
+  await page.getByLabel("Disclosure and notes").nth(1).fill("Program and written comparison completed for this checkpoint.");
 
   await page.getByRole("button", { name: /03 Review/ }).click();
   await page.getByRole("button", { name: "Copy review link" }).click();
   const reviewUrl = await page.evaluate(() => navigator.clipboard.readText());
-  expect(reviewUrl).toContain("?review=");
+  expect(reviewUrl).toContain("/demo?review=");
 
   const reviewer = await context.newPage();
   await reviewer.goto(reviewUrl);
+  await expect(reviewer).toHaveURL(/\/demo\?review=/);
+  await expect(reviewer.getByText("Demo — sample data, nothing is saved")).toBeVisible();
   await expect(reviewer.getByText("This is not an accredited assessment.")).toBeVisible();
   const scoreSelects = reviewer.locator("[data-review-score]");
   for (let index = 0; index < await scoreSelects.count(); index++) await scoreSelects.nth(index).selectOption("4");
@@ -56,6 +48,31 @@ test("@claim:workspace-planning @claim:human-review @claim:sealed-packet builds,
 
   await page.locator("#verify-file").setInputFiles(packetFile!);
   await expect(page.getByText(/Seal valid:/)).toBeVisible();
+});
+
+test("keeps every visible demo control at least 44 by 44 CSS pixels at 390px", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/demo");
+
+  const undersized = await page.locator("a, button, input:not([type=file]), textarea, select").evaluateAll((controls) => controls
+    .filter((control) => !control.classList.contains("visually-hidden"))
+    .map((control) => {
+      const rect = control.getBoundingClientRect();
+      return {
+        control: control.getAttribute("aria-label") || control.textContent?.trim() || control.tagName.toLowerCase(),
+        width: rect.width,
+        height: rect.height
+      };
+    })
+    .filter(({ width, height }) => width < 44 || height < 44));
+
+  expect(undersized).toEqual([]);
+  await expect(page.locator(".wordmark")).toHaveJSProperty("offsetWidth", 44);
+  await expect(page.locator(".wordmark")).toHaveJSProperty("offsetHeight", 44);
+  for (const link of await page.locator("footer a").all()) {
+    await expect(link).toHaveJSProperty("offsetHeight", 44);
+    expect(await link.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(44);
+  }
 });
 
 test("legal routes and offline-first messaging are present", async ({ page }) => {
@@ -109,6 +126,11 @@ test("@claim:offline-reload loads the cached shell offline after the service wor
   try {
     await page.goto("/demo");
     await page.evaluate(() => navigator.serviceWorker.ready);
+    expect(await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.update();
+      return Boolean(registration.active);
+    })).toBe(true);
     await page.reload();
     await context.setOffline(true);
     await page.reload();

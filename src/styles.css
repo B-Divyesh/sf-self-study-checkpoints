@@ -37,7 +37,14 @@ body {
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; }
-a { color: var(--danger); text-underline-offset: 3px; }
+a {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--danger);
+  text-underline-offset: 3px;
+}
 a:hover { text-decoration-thickness: 2px; }
 
 img { display: block; max-width: 100%; }
@@ -84,9 +91,12 @@ svg { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-li
 }
 
 .wordmark {
+  min-width: 44px;
+  min-height: 44px;
   display: inline-flex;
   gap: 10px;
   align-items: center;
+  justify-content: center;
   color: var(--ink);
   font: 800 14px/1.05 var(--display);
   letter-spacing: .08em;
@@ -96,8 +106,12 @@ svg { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-li
 .wordmark svg { width: 36px; height: 36px; padding: 5px; background: var(--highlight); border: 2px solid var(--ink); transform: rotate(-2deg); }
 .site-header nav { display: flex; gap: 12px; align-items: center; }
 .quiet-button, .quiet-link, .text-button {
+  min-width: 44px;
   min-height: 44px;
   padding: 8px 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   background: transparent;
   color: var(--ink);
@@ -314,8 +328,8 @@ select { appearance: auto; }
 .evidence-note { padding: 12px; background: #e5decf; }
 .score-row { margin-bottom: 20px; }
 .score-row label { display: block; margin: 16px 0 6px; font: 800 14px var(--display); }
-.check-field { margin: 24px 0; display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; }
-.check-field input { width: 24px; min-height: 24px; margin-top: 2px; }
+.check-field { margin: 24px 0; display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
+.check-field input { width: 44px; min-height: 44px; margin: 0; }
 
 .legal-page { max-width: 900px; margin: 0 auto; }
 .legal-page h2 { margin-top: 48px; font-size: 2rem; }

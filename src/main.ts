@@ -553,7 +553,8 @@ document.addEventListener("click", async (event) => {
     checkpoint.rubric = checkpoint.rubric.filter((item) => item.id !== button.dataset.id); saveCheckpoints(); render();
   } else if (action === "copy-review-link" && checkpoint) {
     const errors = validateCheckpoint(checkpoint); if (Object.keys(errors).length) { setNotice("Finish the required plan fields before sharing a review request.", "error"); return; }
-    const link = `${location.origin}/?review=${encodeRequest(requestFromCheckpoint(checkpoint))}`;
+    const reviewPath = demoMode ? "/demo" : "/";
+    const link = `${location.origin}${reviewPath}?review=${encodeRequest(requestFromCheckpoint(checkpoint))}`;
     try { await navigator.clipboard.writeText(link); setNotice("Private-by-possession review link copied. Share it only with your reviewer."); } catch { window.prompt("Copy this review link", link); }
   } else if (action === "download-request" && checkpoint) {
     const errors = validateCheckpoint(checkpoint); if (Object.keys(errors).length) { setNotice("Finish the required plan fields before downloading a request.", "error"); return; }

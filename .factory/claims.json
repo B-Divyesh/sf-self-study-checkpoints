@@ -4,21 +4,21 @@
     "claim": "Builds a 42–84 day checkpoint with linked problems, success criteria, rubric, reviewer, and evidence",
     "where": "README feature list, builder",
     "test": "npm run test:e2e -- --grep @claim:workspace-planning --project=desktop",
-    "sandbox": "fresh browser context; complete every owner planning step with one linked proof problem and evidence"
+    "sandbox": "fresh browser context; begin at /demo and complete Maya’s sample planning flow with linked problems and evidence"
   },
   {
     "id": "human-review",
     "claim": "Exports a human review request and imports the reviewer response after checksum verification",
     "where": "README feature list, review and packet screens",
     "test": "npm run test:e2e -- --grep @claim:human-review --project=desktop",
-    "sandbox": "fresh browser context; owner exports request; separate reviewer page scores rubric and downloads response; owner imports it"
+    "sandbox": "fresh browser context; begin at /demo; owner exports a demo review request; separate /demo reviewer page scores it and downloads response; owner imports it"
   },
   {
     "id": "sealed-packet",
     "claim": "Exports a completion packet with an ECDSA P-256 integrity seal that can be verified in the browser",
     "where": "landing page, README",
     "test": "npm run test:e2e -- --grep @claim:sealed-packet --project=desktop",
-    "sandbox": "fresh browser context; complete owner and reviewer sample flow; export packet and verify its seal"
+    "sandbox": "fresh browser context; begin at /demo; complete the demo owner and reviewer flow; export packet and verify its seal"
   },
   {
     "id": "free-no-account",
