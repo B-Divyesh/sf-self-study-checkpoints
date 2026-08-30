@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 type StaticWebAppConfig = {
   globalHeaders: Record<string, string>;
-  routes: Array<{ route: string; headers?: Record<string, string> }>;
+  routes: Array<{ route: string; rewrite?: string; statusCode?: number; headers?: Record<string, string> }>;
 };
 
 const config = JSON.parse(readFileSync(resolve(process.cwd(), "public/staticwebapp.config.json"), "utf8")) as StaticWebAppConfig;
@@ -29,6 +29,8 @@ describe("Azure Static Web Apps response policy", () => {
   it("serves a real 404 page without an invalid rewrite/status route", () => {
     expect(config).toHaveProperty("responseOverrides.404.rewrite", "/404.html");
     expect(config.routes.some((route) => "rewrite" in route && "statusCode" in route)).toBe(false);
+    expect(config.routes.filter((route) => route.rewrite === "/index.html").map((route) => route.route)).toEqual(["/demo", "/privacy", "/terms", "/404"]);
+    expect(config).not.toHaveProperty("navigationFallback");
   });
 });
 

@@ -11,6 +11,7 @@ The repair preserves the Vite + vanilla TypeScript static-web product and `dist/
 - Added `/demo` with a realistic finite-groups checkpoint, a persistent demo banner, reset/start-real controls, and memory-only state that never reads or writes the real local-storage key.
 - Added `.factory/claims.json`; every listed claim has one tagged browser test and was run from the documented demo or clean workflow.
 - Added a real 404 response page, robots/sitemap files, canonical/Open Graph/Twitter metadata, a 1200×630 social card, and a 180×180 touch icon derived from the original cassette art.
+- Replaced the catch-all navigation fallback with explicit rewrites for `/demo`, `/privacy`, `/terms`, and `/404`. Live testing showed the catch-all intercepted unknown paths before Azure could apply the 404 response override; the emulator now returns the designed page with HTTP 404 for an unknown path.
 - Replaced the metaphorical first-screen headline with a direct job statement and recorded the word-count audit in `.factory/copy-audit.md`.
 - Expanded axe coverage across `/`, `/demo`, `/privacy`, `/terms`, and `/404`. This found a transient contrast failure during the sheet’s opacity entrance; the opacity fade was removed so text remains compliant through the motion.
 - Updated the offline shell to cache demo and error routes under `checkpoint-desk-v3`.

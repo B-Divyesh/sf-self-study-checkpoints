@@ -41,7 +41,7 @@ npm test
 npm run build
 ```
 
-The exact clean build command is `npm ci && npm test && npm run build`. It writes the static site to `dist/`, with `dist/index.html` at the root. `public/staticwebapp.config.json` supplies Azure Static Web Apps navigation fallback and security headers.
+The exact clean build command is `npm ci && npm test && npm run build`. It writes the static site to `dist/`, with `dist/index.html` at the root. `public/staticwebapp.config.json` supplies explicit SPA route rewrites, the real 404 response, and security headers.
 
 Factory workers deploy only through the fleet wrapper. It resolves the allowed `sf-self-study-checkpoints` resource and its deployment token:
 
