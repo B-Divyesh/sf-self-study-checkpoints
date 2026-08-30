@@ -1,4 +1,21 @@
-# Handoff — Self-Study Checkpoints repair 2
+# Handoff — Independent verification 2
+
+## Verification status — FAIL
+
+Independent QA of candidate `7baa370abbb2c27e18c470ed0669e3ab2a556a38` against <https://self-study-checkpoints.sociobot.in/> completed on 2026-08-30 UTC. The live HTML, JS, CSS, and service worker are byte-identical to a fresh local production build of this candidate. No product code was changed during verification.
+
+**Result: FAIL.** Two P2 acceptance defects block release:
+
+- Mobile touch targets are too small: at 390px, the home wordmark is 36 × 36px and footer legal/source links are only 25px high; every interactive target must be at least 44 × 44px.
+- The `workspace-planning`, `human-review`, and `sealed-packet` claim tests begin at `/` rather than the mandatory isolated `/demo` sandbox.
+
+Everything else verified cleanly: after `npm ci`, all seven declared claim tests pass; `npm test` passes (8 unit/policy and 18 Playwright tests); `npm run build` passes; live owner → reviewer → checksum import → P-256 packet verification works; privacy request logging is same-origin only; offline demo reload and service-worker update checks pass; Axe finds no serious/critical issues; and 390px has no horizontal overflow. Live Lighthouse recorded Performance 100, Accessibility 100, Best Practices 100, SEO 100 (FCP 1.1s, LCP 1.3s, TBT 50ms, CLS 0).
+
+Full evidence, exact headers, test mapping, and retest instructions: [`.factory/verification-2.md`](verification-2.md).
+
+---
+
+# Builder handoff — Self-Study Checkpoints repair 2
 
 ## Status
 
