@@ -1,78 +1,52 @@
-# Handoff — Independent verification 2
-
-## Verification status — FAIL
-
-Independent QA of candidate `7baa370abbb2c27e18c470ed0669e3ab2a556a38` against <https://self-study-checkpoints.sociobot.in/> completed on 2026-08-30 UTC. The live HTML, JS, CSS, and service worker are byte-identical to a fresh local production build of this candidate. No product code was changed during verification.
-
-**Result: FAIL.** Two P2 acceptance defects block release:
-
-- Mobile touch targets are too small: at 390px, the home wordmark is 36 × 36px and footer legal/source links are only 25px high; every interactive target must be at least 44 × 44px.
-- The `workspace-planning`, `human-review`, and `sealed-packet` claim tests begin at `/` rather than the mandatory isolated `/demo` sandbox.
-
-Everything else verified cleanly: after `npm ci`, all seven declared claim tests pass; `npm test` passes (8 unit/policy and 18 Playwright tests); `npm run build` passes; live owner → reviewer → checksum import → P-256 packet verification works; privacy request logging is same-origin only; offline demo reload and service-worker update checks pass; Axe finds no serious/critical issues; and 390px has no horizontal overflow. Live Lighthouse recorded Performance 100, Accessibility 100, Best Practices 100, SEO 100 (FCP 1.1s, LCP 1.3s, TBT 50ms, CLS 0).
-
-Full evidence, exact headers, test mapping, and retest instructions: [`.factory/verification-2.md`](verification-2.md).
-
----
-
-# Builder handoff — Self-Study Checkpoints repair 2
+# Handoff — Repair 3
 
 ## Status
 
-Candidate `1b0ca2f46633aac450f7b06c47864fdba434e654` contained the earlier application repairs but its handoff used the obsolete direct command `swa deploy ... --app-name self-study-checkpoints`. That bypassed the current fleet wrapper and named an unprefixed app instead of the work-order resource `sf-self-study-checkpoints`.
+**PASS — repaired, committed, pushed, and deployed.**
 
-The repair preserves the Vite + vanilla TypeScript static-web product and `dist/` artifact. The deployment runbook now uses `/opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist`. A unit regression requires that command and rejects the obsolete target.
+This repair starts from verifier report commit `edd1e0f45253f82ff94cb15402f7a61f59addd9f` and candidate `7baa370abbb2c27e18c470ed0669e3ab2a556a38`. The application repair is in commits `b321d2c` and `64c7429`, both pushed to `main`.
 
-## Product and acceptance repairs
+The product remains a Vite + vanilla TypeScript static web app. Its deployment artifact is still `dist/` with `index.html` at its root.
 
-- Added `/demo` with a realistic finite-groups checkpoint, a persistent demo banner, reset/start-real controls, and memory-only state that never reads or writes the real local-storage key.
-- Added `.factory/claims.json`; every listed claim has one tagged browser test and was run from the documented demo or clean workflow.
-- Added a real 404 response page, robots/sitemap files, canonical/Open Graph/Twitter metadata, a 1200×630 social card, and a 180×180 touch icon derived from the original cassette art.
-- Replaced the catch-all navigation fallback with explicit rewrites for `/demo`, `/privacy`, `/terms`, and `/404`. Live testing showed the catch-all intercepted unknown paths before Azure could apply the 404 response override; the emulator now returns the designed page with HTTP 404 for an unknown path.
-- Replaced the metaphorical first-screen headline with a direct job statement and recorded the word-count audit in `.factory/copy-audit.md`.
-- Expanded axe coverage across `/`, `/demo`, `/privacy`, `/terms`, and `/404`. This found a transient contrast failure during the sheet’s opacity entrance; the opacity fade was removed so text remains compliant through the motion.
-- Updated the offline shell to cache demo and error routes under `checkpoint-desk-v3`.
+## Release-blocker repairs
 
-## Local verification — 2026-08-30 UTC
+- Reproduced the verifier’s 390px measurements: the wordmark was 36 × 36px and footer links were about 25px high. All visible links and controls now have 44 × 44px minimum targets; compact text controls use 45px height to avoid a 43.9999px mobile-device-scale rounding result. The reviewer checkbox is 44 × 44px too.
+- Applied the same target rule to the separate static `404.html` styling. The expanded regression initially found its 20px wordmark target and now covers it.
+- Added a 390 × 844 browser regression which measures all visible anchors, buttons, form controls, demo steps, review view, legal pages, and the true 404 page. It fails on any rectangle below 44 × 44px.
+- Moved the `workspace-planning`, `human-review`, and `sealed-packet` claim flow to start at `/demo`. It asserts the demo banner and URL, completes Maya Chen’s sample flow, and keeps the copied sample review link at `/demo?review=…`; the reviewer path therefore remains in the isolated demo namespace.
+- Updated the matching claim sandbox descriptions and demo documentation. Real-workspace review links still correctly use `/`.
+- The offline claim now also calls `registration.update()` before proving a controlled `/demo` reload works offline.
 
-Exact clean command:
+## Verification — 2026-08-30 UTC
 
-```sh
-npm ci && npm test && npm run build
-```
+Commands and results:
 
-- Pass: clean install, 0 audit vulnerabilities.
-- Pass: 8 Vitest unit/policy/regression checks.
-- Pass: 18 Playwright checks across desktop Chromium and 390×844 mobile. Coverage includes the complete owner → reviewer → checksum import → P-256 seal/verify workflow, keyboard skip focus, form errors, legal/404 routes, demo reset/isolation, same-origin privacy, offline reload in its own browser context, and axe serious/critical scans.
-- Pass: every exact command in `.factory/claims.json`.
-- Pass: `npm run build`; `dist/index.html` exists. Initial JS is 41.84 KB / 13.90 KB gzip; CSS is 17.04 KB / 4.68 KB gzip.
-- Pass: Azure Static Web Apps emulator returns one-year immutable caching for `/bundles/*`, five-minute revalidation for documents and `sw.js`, and the restrictive CSP/security headers.
-- Pass: `/opt/fleet/lib/verify-url.sh` against the emulator: HTTP 200, title, `lang=en`, one h1, main landmark, no missing alt or button labels, and no console/page errors.
-- Pass: mobile Lighthouse 12.8.2 — Performance 100, Accessibility 100, Best Practices 100, SEO 100; FCP 1.2 s, LCP 1.6 s, TBT 0 ms, CLS 0.
-- Pass: desktop and 390px screenshots were inspected; no overflow, clipped actions, or lost content was found.
+- `npm ci`: pass; 60 packages installed, 0 vulnerabilities.
+- `npm test`: pass after the final changes — 8 Vitest unit/policy checks and 20 Playwright desktop/mobile checks.
+- Every exact command in `.factory/claims.json`: pass against the final tree, including the three demo-entry claims.
+- `npm run build`: pass. `dist/index.html` exists; initial application JS is 41,855 B (13,920 B gzip) and CSS is 17,235 B (4,690 B gzip).
+- `/opt/fleet/lib/verify-url.sh http://127.0.0.1:4173/demo <temp-evidence>`: pass; title, `lang=en`, one h1, main landmark, image alt text, button labels, and no console/page errors.
+- Playwright Axe checks in the browser suite: zero serious or critical findings on `/`, `/demo`, `/privacy`, `/terms`, and `/404` at desktop and 390px.
+- Local mobile Lighthouse on `/demo`: Performance 100, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9s, LCP 1.2s, TBT 10ms, CLS 0. Chromium emitted a target-crash warning only after it wrote the complete JSON report; the recorded category scores and metrics are from that report.
 
-Evidence is stored under `.factory/evidence/`.
+## Deployment and live evidence
 
-## Deploy and live verification
-
-The authorized work-order command is:
+Deployment command (the work-order-approved wrapper):
 
 ```sh
 /opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist
 ```
 
-Final production deployment completed from application commit `487eb10` with fleet deployment ID `5fee5d60-915a-44e2-9715-10c29ab37433`.
+Final deployment ID: `447bd2e3-691f-4328-9ada-abee27d22a70`; status: **Succeeded**. It addressed only `sf-self-study-checkpoints` and served <https://self-study-checkpoints.sociobot.in> over managed TLS.
 
-- Pass: fleet wrapper targeted only `sf-self-study-checkpoints`, reused its eastus2 app, uploaded `dist/`, and reported production status `Succeeded`.
-- Pass: <https://self-study-checkpoints.sociobot.in/> returned HTTP 200 over managed TLS. `/demo`, `/privacy`, `/terms`, `/404`, `robots.txt`, `sitemap.xml`, and the social image returned 200.
-- Pass: an unknown path returned HTTP 404 with the designed “Page not found” title and h1.
-- Pass: live `/opt/fleet/lib/verify-url.sh` found the expected title, `lang=en`, one h1, main landmark, no missing alt/button labels, and no console/page errors.
-- Pass: live document and service worker use five-minute revalidation; the hashed JS bundle uses `public, max-age=31536000, immutable`; CSP, HSTS, referrer, nosniff, and permissions headers are present.
-- Pass: live `index.html`, `sw.js`, JS, and CSS are byte-identical to local `dist/`. SHA-256: index `74ac20cf…`, service worker `a7fb6660…`, JS `4f8d180e…`, CSS `929205db…`.
-- Pass: a fresh 390×844 browser was controlled by `checkpoint-desk-v3`, reloaded `/demo` offline with its sample heading/banner intact, and logged no console or page errors.
+- Live `/opt/fleet/lib/verify-url.sh` on `/demo`: HTTP 200, correct title/lang/h1/main/alt/button checks, and no console or page errors (554ms load in the verifier script).
+- Live artifact SHA-256 values exactly matched local `dist/`: `index.html` `04cbce29…`, `sw.js` `a7fb6660…`, `404.html` `56f91b34…`, `404.css` `97999148…`, JS `74457412…`, CSS `a75976f9…`.
+- Live `/`, `/demo`, `/privacy`, `/terms`, and `/404` return 200. An unknown route returns HTTP 404 with the designed `Page not found — Self-Study Checkpoints` page.
+- Live documents use short revalidation (`public, must-revalidate, max-age=30`); hashed bundles use `public, max-age=31536000, immutable`. CSP, HSTS, `nosniff`, strict referrer policy, and a restrictive permissions policy are present.
+- A fresh 390 × 844 live browser measured every visible interactive target on the demo, each workspace step, reviewer route, legal routes, app 404, and HTTP 404 at least 44 × 44px. It also confirmed skip-link focus moves to `#main`, service-worker update returns an active controlled worker, offline `/demo` reload restores the sample/banner, no page or console errors occur, and all captured runtime requests stay on `https://self-study-checkpoints.sociobot.in`.
 
-## Known limitations
+## Known limitations / next steps
 
-- Peer review is non-accredited and reviewer identity is not verified. The packet seal proves integrity, not identity, authorship, or mastery.
-- Evidence remains linked rather than uploaded. Browser data has no sync; learners should keep exported packets.
-- Very large review links can be unwieldy; the JSON request remains the reliable fallback.
+- Peer review is non-accredited; packet sealing proves later integrity, not identity, authorship, mastery, or institutional approval.
+- Evidence remains linked rather than uploaded, and browser-local plans do not sync. Learners should retain exported packets.
+- No release-blocking gaps are known. The next action is independent verification of the deployed `64c7429` artifact.
