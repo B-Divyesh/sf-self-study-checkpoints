@@ -44,7 +44,15 @@ The authorized work-order command is:
 /opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist
 ```
 
-Production evidence will be appended after the committed repair is pushed and deployed.
+Final production deployment completed from application commit `487eb10` with fleet deployment ID `5fee5d60-915a-44e2-9715-10c29ab37433`.
+
+- Pass: fleet wrapper targeted only `sf-self-study-checkpoints`, reused its eastus2 app, uploaded `dist/`, and reported production status `Succeeded`.
+- Pass: <https://self-study-checkpoints.sociobot.in/> returned HTTP 200 over managed TLS. `/demo`, `/privacy`, `/terms`, `/404`, `robots.txt`, `sitemap.xml`, and the social image returned 200.
+- Pass: an unknown path returned HTTP 404 with the designed “Page not found” title and h1.
+- Pass: live `/opt/fleet/lib/verify-url.sh` found the expected title, `lang=en`, one h1, main landmark, no missing alt/button labels, and no console/page errors.
+- Pass: live document and service worker use five-minute revalidation; the hashed JS bundle uses `public, max-age=31536000, immutable`; CSP, HSTS, referrer, nosniff, and permissions headers are present.
+- Pass: live `index.html`, `sw.js`, JS, and CSS are byte-identical to local `dist/`. SHA-256: index `74ac20cf…`, service worker `a7fb6660…`, JS `4f8d180e…`, CSS `929205db…`.
+- Pass: a fresh 390×844 browser was controlled by `checkpoint-desk-v3`, reloaded `/demo` offline with its sample heading/banner intact, and logged no console or page errors.
 
 ## Known limitations
 
