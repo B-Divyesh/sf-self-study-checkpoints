@@ -1,10 +1,10 @@
-# Handoff — Repair 3
+# Handoff — Independent verification 3
 
 ## Status
 
-**PASS — repaired, committed, pushed, and deployed.**
+**FAIL — do not release candidate `b75910eaedbd7ac026eee736921b83292f057499`.**
 
-This repair starts from verifier report commit `edd1e0f45253f82ff94cb15402f7a61f59addd9f` and candidate `7baa370abbb2c27e18c470ed0669e3ab2a556a38`. The application repair is in commits `b321d2c` and `64c7429`, both pushed to `main`.
+This file retains the prior repair record below for context. The current independent verification is authoritative: at a cold 1440 x 900 live visit, **Try it with sample data** begins at y=918.45px, below the first viewport. The first desktop screen therefore does not state what to click first in the required plain words. See `.factory/verification-3.md` for complete evidence.
 
 The product remains a Vite + vanilla TypeScript static web app. Its deployment artifact is still `dist/` with `index.html` at its root.
 
@@ -29,7 +29,7 @@ Commands and results:
 - Playwright Axe checks in the browser suite: zero serious or critical findings on `/`, `/demo`, `/privacy`, `/terms`, and `/404` at desktop and 390px.
 - Local mobile Lighthouse on `/demo`: Performance 100, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9s, LCP 1.2s, TBT 10ms, CLS 0. Chromium emitted a target-crash warning only after it wrote the complete JSON report; the recorded category scores and metrics are from that report.
 
-## Deployment and live evidence
+## Prior repair deployment and live evidence
 
 Deployment command (the work-order-approved wrapper):
 
@@ -49,4 +49,4 @@ Final deployment ID: `447bd2e3-691f-4328-9ada-abee27d22a70`; status: **Succeeded
 
 - Peer review is non-accredited; packet sealing proves later integrity, not identity, authorship, mastery, or institutional approval.
 - Evidence remains linked rather than uploaded, and browser-local plans do not sync. Learners should retain exported packets.
-- No release-blocking gaps are known. The next action is independent verification of the deployed `64c7429` artifact.
+- **Current release-blocking gap:** move the desktop hero CTA into the initial cold 1440 x 900 viewport and add a no-scroll visibility regression. Then rerun the first-read test and all claims. The current candidate remains **FAIL**.
