@@ -20,6 +20,7 @@ import {
 
 const STORAGE_KEY = "self-study-checkpoints:v1";
 const STEPS = ["Scope", "Problems", "Review", "Packet"] as const;
+const REVIEW_LINK_RECOVERY = "This review link could not be read. Ask the learner for a new link or use the downloaded review request file.";
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
 function isDemoUrl(url: URL = new URL(location.href)): boolean {
@@ -61,12 +62,15 @@ function activeCheckpoint(): Checkpoint | undefined {
 }
 
 function requestFromUrl(): ReviewRequest | null {
-  const value = new URLSearchParams(location.search).get("review");
+  return readReviewRequest(new URLSearchParams(location.search).get("review"));
+}
+
+function readReviewRequest(value: string | null): ReviewRequest | null {
   if (!value) return null;
   try {
     return decodeRequest(value);
-  } catch (error) {
-    notice = error instanceof Error ? error.message : "The review link could not be read.";
+  } catch {
+    notice = REVIEW_LINK_RECOVERY;
     return null;
   }
 }
@@ -543,13 +547,7 @@ function navigate(to: string, replace = false): void {
 }
 
 function requestFromUrlAt(url: URL): ReviewRequest | null {
-  const value = url.searchParams.get("review");
-  if (!value) return null;
-  try { return decodeRequest(value); }
-  catch (error) {
-    notice = error instanceof Error ? error.message : "The review link could not be read.";
-    return null;
-  }
+  return readReviewRequest(url.searchParams.get("review"));
 }
 
 document.addEventListener("input", (event) => {

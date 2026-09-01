@@ -253,6 +253,18 @@ test("explains malformed reviewer JSON without exposing parser jargon", async ({
   await expect(page.getByText(/Expected property name/)).toHaveCount(0);
 });
 
+test("explains malformed and truncated review links with recovery actions", async ({ page }) => {
+  const recovery = "This review link could not be read. Ask the learner for a new link or use the downloaded review request file.";
+  const truncated = encodeRequest(requestFromCheckpoint(sampleCheckpoint())).slice(0, -12);
+
+  for (const reviewValue of ["%25bad", truncated]) {
+    await page.goto(`/?review=${reviewValue}`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Plan a self-study checkpoint for review.");
+    await expect(page.locator("#notice")).toHaveText(recovery);
+    await expect(page.getByText(/Failed to execute 'atob'|Unexpected end of JSON input/)).toHaveCount(0);
+  }
+});
+
 test("@claim:offline-reload loads the cached shell offline after the service worker takes control", async ({ browser }) => {
   const context = await browser.newContext({ baseURL: "http://127.0.0.1:4173" });
   const page = await context.newPage();
