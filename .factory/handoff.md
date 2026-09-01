@@ -1,38 +1,23 @@
-# Handoff — polish round 1
+# Handoff — verification 5
 
-## Delivered
+## Status
 
-Repair commit: `f62e8f6fd4168300ad68566dc06d0ceb8d9cace5`.
+**PASS** for candidate `d10e9b3d278492e97a169fb7bea8550f55cfb53d` at <https://self-study-checkpoints.sociobot.in/> on 2026-09-01 UTC.
 
-- Rewrote the first-screen, empty-state, README, and reviewer wording in plain language.
-- Kept `/demo` as the one-click isolated sample path with its persistent banner, reset action, and real-data separation.
-- Added 14 catalogued, demo-backed claims with one tagged observable browser test each.
-- Added route-specific title, description, canonical, Open Graph, Twitter, and robots metadata; internal navigation now moves focus to the h1 and announces the destination.
-- Completed the real HTTP 404 shell, including metadata, normal navigation, legal links, and skip-link focus behavior.
-- Fixed the 390px header spacing without changing the cassette-zine visual system.
+The product supports the intended independent-learner workflow: plan a 6–12 week checkpoint, assemble linked evidence and a visible human rubric, request review, and export a browser-verifiable integrity-sealed packet. It clearly states that review is non-accredited and that the tool does not teach, grade proofs automatically, proctor, verify identity, or issue credentials.
 
-The finding-by-finding record is in [`.factory/polish-1.md`](polish-1.md).
+## Verification completed
 
-## Verification
+- From the clean checkout, `npm ci` completed with 0 reported vulnerabilities.
+- Every one of the 14 exact `/demo` claim commands in `.factory/claims.json` passed.
+- `npm test` passed: 8 Vitest checks and 54 Playwright checks.
+- `npm run build` passed and produced `dist/`.
+- Built JavaScript is 44,312 B (14.49 kB gzip); CSS is 17,384 B (4.74 kB gzip).
+- Live `index.html`, JS, and CSS are byte-identical to the fresh candidate build.
+- Independent live checks passed for the cold first screen, owner-to-reviewer-to-packet journey, 41-day validation, malformed-file recovery, local-only traffic, offline demo reload, desktop/390px layout, keyboard focus, reduced motion, response headers/caching, and serious/critical Axe findings.
+- `verify-url.sh` passed live `/demo` with title, language, one h1, main landmark, image alt text, labelled buttons, and no browser console/page errors.
 
-A new clone at `/tmp/self-study-checkpoints-clean.RKIqBv` ran `npm ci`, every literal test command from `.factory/claims.json`, `npm test`, and `npm run build` successfully. The full suite contains 8 Vitest checks and 46 Playwright checks across desktop and mobile.
-
-Final built payload: JavaScript 44,312 B (14.49 kB gzip); CSS 17,384 B (4.74 kB gzip). `dist/index.html` is present.
-
-Live deployment:
-
-```sh
-/opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist
-```
-
-Deployment ID: `b462e69d-7797-4e44-982d-00259b63630c` (Succeeded).
-
-- `verify-url.sh https://self-study-checkpoints.sociobot.in/demo` passed: title, `lang=en`, one h1, main, image alt text, button labels, and no console/page errors. Evidence: `.factory/evidence/polish-1-live/demo/`.
-- Live Playwright Axe checks found zero serious/critical issues on `/`, `/demo`, `/privacy`, `/terms`, and `/no-such-page` at 390px.
-- A cold live browser check confirmed the visible demo CTA, route focus/announcement and Back behavior, 12px mobile header separation, HTTP 404 status, complete 404 metadata, skip-link focus, and 404 Privacy/Terms links.
-- Live request logging during the demo and local browser suite remains same-origin only. The dedicated service-worker test reloads the controlled demo while offline.
-
-## Run locally
+## Run and verify
 
 ```sh
 npm ci
@@ -40,6 +25,8 @@ npm test
 npm run build
 ```
 
-## Known gaps
+For the full evidence, including individual claim outcomes, live artifact hashes, and header values, see [`.factory/verification-5.md`](verification-5.md).
 
-None. The product remains intentionally local-first, non-accredited, and does not prove identity, authorship, mastery, or institutional approval.
+## Known limits and next steps
+
+No release-blocking gaps were found. The product is intentionally local-first and does not synchronise plans. Review links contain the selected checkpoint for the chosen reviewer; completion seals detect later changes but do not establish identity, authorship, mastery, accreditation, or institutional approval.
