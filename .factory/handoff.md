@@ -1,23 +1,27 @@
-# Handoff — verification 5
+# Handoff — first-read review 2
 
 ## Status
 
-**PASS** for candidate `d10e9b3d278492e97a169fb7bea8550f55cfb53d` at <https://self-study-checkpoints.sociobot.in/> on 2026-09-01 UTC.
+**FAIL** for candidate `07e990c075ad6862b51af393fd00be80d5447ede` at <https://self-study-checkpoints.sociobot.in/> on 1 September 2026 UTC.
 
-The product supports the intended independent-learner workflow: plan a 6–12 week checkpoint, assemble linked evidence and a visible human rubric, request review, and export a browser-verifiable integrity-sealed packet. It clearly states that review is non-accredited and that the tool does not teach, grade proofs automatically, proctor, verify identity, or issue credentials.
+The complete review is in `.factory/review-2.md`. Five findings remain. The blocking item is the half-fixed earlier claim-coverage finding: the product says private signing material stays in browser storage, but no listed claim test creates a real-workspace signing key and confirms its storage, request behavior, and omission from the downloaded packet.
 
-## Verification completed
+## Work completed
 
-- From the clean checkout, `npm ci` completed with 0 reported vulnerabilities.
-- Every one of the 14 exact `/demo` claim commands in `.factory/claims.json` passed.
-- `npm test` passed: 8 Vitest checks and 54 Playwright checks.
-- `npm run build` passed and produced `dist/`.
-- Built JavaScript is 44,312 B (14.49 kB gzip); CSS is 17,384 B (4.74 kB gzip).
-- Live `index.html`, JS, and CSS are byte-identical to the fresh candidate build.
-- Independent live checks passed for the cold first screen, owner-to-reviewer-to-packet journey, 41-day validation, malformed-file recovery, local-only traffic, offline demo reload, desktop/390px layout, keyboard focus, reduced motion, response headers/caching, and serious/critical Axe findings.
-- `verify-url.sh` passed live `/demo` with title, language, one h1, main landmark, image alt text, labelled buttons, and no browser console/page errors.
+- Checked the live first screen in fresh 390 × 844 and 1440 × 900 browser contexts before scrolling.
+- Entered the sample in one click and confirmed populated data, persistent demo banner, Reset demo, real-storage isolation, same-origin requests, and offline reload.
+- Ran every exact command in `.factory/claims.json` from a fresh temporary clone; all 14 passed.
+- Ran `npm test` and `npm run build`; 8 Vitest and 54 Playwright checks passed, and `dist/` was produced.
+- Confirmed the live HTML, JavaScript, and CSS match the fresh build by SHA-256.
+- Checked route titles, metadata, one `h1`, one `main`, internal links, HTTP 404 behavior, keyboard focus, browser Back, touch targets, and mobile overflow.
+- Ran live Axe checks on home, demo, Privacy, Terms, and HTTP 404 at mobile and desktop sizes; no serious or critical issue was reported.
+- Ran `/opt/fleet/lib/verify-url.sh` against the live demo; it passed.
+- Read the earlier review, polish report, handoff, and verification reports, then independently checked every earlier finding.
+- Audited every landing copy unit and every README sentence with word counts.
 
-## Run and verify
+No product code was changed.
+
+## Verification commands
 
 ```sh
 npm ci
@@ -25,8 +29,12 @@ npm test
 npm run build
 ```
 
-For the full evidence, including individual claim outcomes, live artifact hashes, and header values, see [`.factory/verification-5.md`](verification-5.md).
+Each command listed in `.factory/claims.json` must also be run literally from a fresh clone. For live smoke verification:
 
-## Known limits and next steps
+```sh
+/opt/fleet/lib/verify-url.sh https://self-study-checkpoints.sociobot.in/demo /tmp/self-study-checkpoints-review-2
+```
 
-No release-blocking gaps were found. The product is intentionally local-first and does not synchronise plans. Review links contain the selected checkpoint for the chosen reviewer; completion seals detect later changes but do not establish identity, authorship, mastery, accreditation, or institutional approval.
+## Remaining work
+
+See F-1-7 and F-2-1 through F-2-4 in `.factory/review-2.md`. The product remains buildable and the sample works, but the zero-finding review standard is not met.
