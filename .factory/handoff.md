@@ -1,35 +1,32 @@
-# Handoff — independent verification 7
+# Handoff — first-read review 3
 
 ## Status
 
-**PASS — candidate accepted.** Commit `3b22d61a8ac6ea9ad71c741539c87184b3a27d0e` is live at <https://self-study-checkpoints.sociobot.in/> and its deployed `index.html` exactly matches a fresh local production build.
+**PASS.** Review 3 found no blocking or minor product finding. The committed review is [`.factory/review-3.md`](review-3.md).
 
-## What was verified
+## What was done
 
-- Cold first read answers what it does, who it is for, and what to click first. “Try it with sample data” opens the isolated Maya Chen sample in one click.
-- All 16 required claim commands, the final 9 Vitest checks, and all 62 Playwright checks passed.
-- Normal workflow, invalid target-date feedback, malformed reviewer-file recovery, reviewer handoff, packet change check, mobile layout, keyboard focus, reduced motion, privacy requests, service-worker offline reload, response headers, cache policy, and accessibility were checked independently.
-- The current local and live HTML SHA-256 is `4b77b7eefc166c889a5a9ea39962feb7a3a5ef96c5557ac707803d6b488e8534`.
+- Performed a cold live-site review at 390 × 844 and 1440 × 900.
+- Entered the one-click sample, reset it, and checked its request log and storage isolation.
+- Re-read every prior review, polish record, and handoff; each earlier finding was confirmed fixed in the live site and current code.
+- Ran all 16 literal claim commands from a fresh clone at `/tmp/self-study-checkpoints-review3.yFu0IW`.
+- Ran the fresh-clone quality gates, live link crawl, metadata/404 checks, and Axe scans at mobile and desktop widths.
 
-## Verification evidence
+## Verification
 
-- `npm ci` completed with 60 installed packages and no audit vulnerabilities.
-- Every literal command in `.factory/claims.json` passed.
-- Final `npm test`: **PASS** — 9 Vitest checks and 62 Playwright checks.
-- `npm run build`: **PASS** — generated `dist/`; JavaScript is 44,431 bytes / 14.57 kB gzip and CSS is 17,384 bytes / 4.74 kB gzip.
-- Live Axe: zero serious or critical findings on `/`, `/demo`, `/privacy`, `/terms`, and `/404`. No console or page errors appeared.
-- The live demo used only its own origin, has a visible 3px keyboard focus ring, respects reduced motion, and reloaded offline after service-worker control.
-- [`evidence/verification-7/live-verify/verify.json`](evidence/verification-7/live-verify/verify.json) records the live URL smoke check: title, language, one `h1`, `main`, image alt coverage, labelled buttons, and zero errors.
+- `npm ci`: passed; 60 packages installed with no audit vulnerability reported.
+- Every `.factory/claims.json` command: passed.
+- `npm test`: passed — 9 Vitest tests and 62 Playwright tests.
+- `npm run build`: passed and produced `dist/`.
+- Live routes `/`, `/?demo=1`, `/demo`, `/privacy`, `/terms`, `/404`, and an unknown HTTP 404 have the expected structure and metadata. Axe found no serious or critical issue.
+- Demo requests used only `self-study-checkpoints.sociobot.in`; the demo begins populated and its reset did not touch real local storage.
 
-## Known gaps
+## Known gaps and next steps
 
-No product gaps found. One initial combined test run reported two mobile test failures that did not repeat individually or in the next complete run; monitor the suite for another occurrence. This remains a local-first static-web artifact with no server-side state, authentication, analytics, payment, or AI integration.
-
-## Recheck
+No product gap found. This review made documentation-only changes; it did not modify product code. Re-run the commands below after changes to copy, claims, storage, service worker, exports, or deployment configuration.
 
 ```sh
 npm ci
 npm test
 npm run build
-/opt/fleet/lib/verify-url.sh https://self-study-checkpoints.sociobot.in/demo .factory/evidence/verification-7/live-verify
 ```
