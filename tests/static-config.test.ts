@@ -41,3 +41,17 @@ describe("factory deployment contract", () => {
     expect(readme).not.toContain("swa deploy dist --env production --app-name self-study-checkpoints");
   });
 });
+
+describe("product claims", () => {
+  it("@claim:artwork-provenance records the footer statement against the selected original asset", () => {
+    const app = readFileSync(resolve(process.cwd(), "src/main.ts"), "utf8");
+    const design = readFileSync(resolve(process.cwd(), ".factory/design.md"), "utf8");
+    const asset = JSON.parse(readFileSync(resolve(process.cwd(), "assets/src/checkpoint-cassette-01.json"), "utf8")) as Record<string, string>;
+
+    expect(app).toContain("Original artwork generated with Azure AI Foundry");
+    expect(design).toContain("Azure AI Foundry factory image deployment");
+    expect(asset.status).toBe("selected");
+    expect(asset.generator).toContain("Azure AI Foundry");
+    expect(asset.prompt).toContain("self-study checkpoint");
+  });
+});

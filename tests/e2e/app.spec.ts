@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { encodeRequest, requestFromCheckpoint, sampleCheckpoint } from "../../src/model";
@@ -21,11 +22,11 @@ async function completeDemoFlow(page: Page, context: BrowserContext): Promise<vo
   await page.getByRole("button", { name: /03 Review/ }).click();
   await page.getByRole("button", { name: "Copy review link" }).click();
   const reviewUrl = await page.evaluate(() => navigator.clipboard.readText());
-  expect(reviewUrl).toContain("/demo?review=");
+  expect(reviewUrl).toContain("/?demo=1&review=");
 
   const reviewer = await context.newPage();
   await reviewer.goto(reviewUrl);
-  await expect(reviewer).toHaveURL(/\/demo\?review=/);
+  await expect(reviewer).toHaveURL(/\/?demo=1&review=/);
   await expect(reviewer.getByText("Demo — sample data, nothing is saved")).toBeVisible();
   await expect(reviewer.getByText("This is not an accredited assessment.")).toBeVisible();
   const scoreSelects = reviewer.locator("[data-review-score]");
@@ -43,12 +44,12 @@ async function completeDemoFlow(page: Page, context: BrowserContext): Promise<vo
   await page.locator("#review-file").setInputFiles(reviewFile!);
   await expect(page.getByText("Reviewer response imported and checksum verified.")).toBeVisible();
   const packetDownload = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Seal and export packet" }).click();
+  await page.getByRole("button", { name: "Export completion packet" }).click();
   const packetFile = await (await packetDownload).path();
   expect(packetFile).toBeTruthy();
 
   await page.locator("#verify-file").setInputFiles(packetFile!);
-  await expect(page.getByText(/Seal valid:/)).toBeVisible();
+  await expect(page.getByText(/Packet check valid:/)).toBeVisible();
 }
 
 test("completes the demo owner, reviewer, and packet workflow", async ({ page, context }) => {
@@ -69,12 +70,12 @@ test("@claim:workspace-planning shows a complete 42–84 day sample plan", async
 
 test("@claim:human-review exports and imports a checksum-verified reviewer response", async ({ page, context }) => {
   await completeDemoFlow(page, context);
-  await expect(page.getByText(/Seal valid:/)).toBeVisible();
+  await expect(page.getByText(/Packet check valid:/)).toBeVisible();
 });
 
-test("@claim:sealed-packet exports and verifies an integrity-sealed packet", async ({ page, context }) => {
+test("@claim:sealed-packet exports and verifies a completion packet change check", async ({ page, context }) => {
   await completeDemoFlow(page, context);
-  await expect(page.getByText(/Seal valid:/)).toBeVisible();
+  await expect(page.getByText(/Packet check valid:/)).toBeVisible();
 });
 
 test("keeps every visible demo and reviewer control at least 44 by 44 CSS pixels at 390px", async ({ page }) => {
@@ -123,7 +124,7 @@ test("keeps the primary sample action visible without scrolling at 1440 by 900",
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
 
-  const bounds = await page.locator('a.button.primary[href="/demo"]').evaluate((element) => {
+  const bounds = await page.locator('a.button.primary[href="/?demo=1"]').evaluate((element) => {
     const rect = element.getBoundingClientRect();
     return {
       top: rect.top,
@@ -188,11 +189,28 @@ test("static HTTP 404 shell has metadata, keyboard skip focus, and legal links",
   await expect(page).toHaveTitle("Page not found — Self-Study Checkpoints");
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /requested Self-Study Checkpoints page/);
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Page not found — Self-Study Checkpoints");
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute("href", "/apple-touch-icon.png");
   await page.keyboard.press("Tab");
   await page.keyboard.press("Enter");
   await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main");
   await expect(page.getByRole("link", { name: "Privacy" }).last()).toHaveAttribute("href", "/privacy");
   await expect(page.getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+});
+
+test("opens the isolated sample directly with ?demo=1", async ({ page }) => {
+  await page.goto("/?demo=1");
+  await expect(page).toHaveTitle("Demo — Self-Study Checkpoints");
+  await expect(page.getByText("Demo — sample data, nothing is saved")).toBeVisible();
+  await expect(page.getByLabel("Checkpoint title")).toHaveValue("Finite groups checkpoint");
+  await page.getByRole("button", { name: "Reset demo" }).click();
+  await expect(page.getByLabel("Checkpoint title")).toHaveValue("Finite groups checkpoint");
+});
+
+test("identifies the external source destination in the footer", async ({ page }) => {
+  await page.goto("/");
+  const source = page.getByRole("link", { name: "Source code on GitHub (external site)" });
+  await expect(source).toHaveAttribute("href", "https://github.com/B-Divyesh/sf-self-study-checkpoints");
+  await expect(source).toHaveAttribute("target", "_blank");
 });
 
 test("separates mobile header destinations with a visible gap", async ({ page }) => {
@@ -355,7 +373,7 @@ test("@claim:review-request-options produces both a review link and JSON request
   await page.goto("/demo");
   await page.getByRole("button", { name: /03 Review/ }).click();
   await page.getByRole("button", { name: "Copy review link" }).click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("/demo?review=");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("/?demo=1&review=");
   const downloaded = page.waitForEvent("download");
   await page.getByRole("button", { name: "Request file", exact: true }).click();
   expect((await downloaded).suggestedFilename()).toMatch(/review-request\.json$/);
@@ -367,6 +385,60 @@ test("@claim:review-link-disclosure explains who can read a shared review link",
   await expect(page.getByText("Anyone with this link can read the checkpoint.")).toBeVisible();
   await page.getByLabel("Utility navigation").getByRole("link", { name: "Privacy" }).click();
   await expect(page.getByText("Anyone who receives that link can read it.")).toBeVisible();
+});
+
+test("@claim:local-signing-key keeps the real-workspace private key local and excludes it from the packet", async ({ page, context }) => {
+  const requests: string[] = [];
+  context.on("request", (request) => requests.push(request.url()));
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/?demo=1");
+  await expect(page.getByText("Demo — sample data, nothing is saved")).toBeVisible();
+  await page.getByRole("link", { name: "Start for real" }).click();
+
+  const checkpoint = sampleCheckpoint();
+  checkpoint.id = "real-signing-key-claim";
+  checkpoint.title = "Real signing key checkpoint";
+  await page.evaluate((value) => localStorage.setItem("self-study-checkpoints:v1", JSON.stringify([value])), checkpoint);
+  await page.reload();
+  await expect(page.getByLabel("Checkpoint title")).toHaveValue("Real signing key checkpoint");
+
+  await page.getByRole("button", { name: /04 Packet/ }).click();
+  await page.getByLabel("Evidence title").nth(1).fill("Coset program and notes");
+  await page.getByLabel("Public or reviewer-accessible link").nth(1).fill("https://example.com/maya/cosets");
+  await page.getByLabel("Disclosure and notes").nth(1).fill("Program and written comparison completed for this checkpoint.");
+  await page.getByRole("button", { name: /03 Review/ }).click();
+  await page.getByRole("button", { name: "Copy review link" }).click();
+  const reviewUrl = await page.evaluate(() => navigator.clipboard.readText());
+  const reviewer = await context.newPage();
+  await reviewer.goto(reviewUrl);
+  const scoreSelects = reviewer.locator("[data-review-score]");
+  for (let index = 0; index < await scoreSelects.count(); index++) await scoreSelects.nth(index).selectOption("4");
+  await reviewer.getByLabel("Relationship to learner").fill("Study group reviewer");
+  await reviewer.getByLabel("Overall feedback").fill("The proof is complete, readable, and the dependencies are explicit.");
+  await reviewer.getByLabel("Overall decision").selectOption("meets");
+  await reviewer.getByLabel(/I attest that I inspected/).check();
+  const responseDownload = reviewer.waitForEvent("download");
+  await reviewer.getByRole("button", { name: "Download signed-off response" }).click();
+  const responsePath = await (await responseDownload).path();
+  expect(responsePath).toBeTruthy();
+
+  await page.getByRole("button", { name: /04 Packet/ }).click();
+  await page.locator("#review-file").setInputFiles(responsePath!);
+  await expect(page.getByText("Reviewer response imported and checksum verified.")).toBeVisible();
+  const packetDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export completion packet" }).click();
+  const packetPath = await (await packetDownload).path();
+  expect(packetPath).toBeTruthy();
+
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("self-study-checkpoints:v1") || "[]"));
+  const savedCheckpoint = stored.find((item: { id: string }) => item.id === "real-signing-key-claim");
+  expect(savedCheckpoint.signingKey.privateJwk.d).toBeTruthy();
+  expect(savedCheckpoint.signingKey.publicJwk.x).toBeTruthy();
+  const packet = JSON.parse(await readFile(packetPath!, "utf8"));
+  expect(packet.checkpoint.signingKey).toBeUndefined();
+  expect(packet.signature.publicKey).toEqual(savedCheckpoint.signingKey.publicJwk);
+  expect(JSON.stringify(packet)).not.toContain(savedCheckpoint.signingKey.privateJwk.d);
+  expect(requests.every((url) => new URL(url).origin === "http://127.0.0.1:4173")).toBe(true);
 });
 
 test("has no serious or critical accessibility violations on public routes", async ({ page }) => {
