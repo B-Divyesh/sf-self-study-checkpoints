@@ -1,8 +1,8 @@
 # Self-Study Checkpoints
 
-Self-Study Checkpoints is a free, local-first web tool for serious independent math and computer-science learners. It turns a 6–12 week study plan into an inspectable agreement: define the syllabus slice, link rigorous problems, state the evidence and rubric up front, collect a human reviewer response, then export a cryptographically integrity-sealed completion packet.
+Self-Study Checkpoints is a free local-first tool for independent math and computer-science learners. Plan a 6–12 week study checkpoint. Add problems, evidence, a rubric, and a reviewer. Export a completion packet that shows whether its contents changed.
 
-It deliberately does not issue credentials, grade proofs, proctor work, or redistribute exercises. Peer review is always labelled non-accredited.
+It does not teach, grade proofs, verify identity, proctor work, issue credentials, or redistribute exercises. A reviewer’s response is non-accredited.
 
 Live: <https://self-study-checkpoints.sociobot.in>
 
@@ -10,11 +10,11 @@ Try the isolated sample: <https://self-study-checkpoints.sociobot.in/demo>. Demo
 
 ## What the v1 does
 
-- Saves multiple checkpoint plans locally with no account or tracking.
+- Saves multiple checkpoint plans locally. No account, analytics, or tracking is used.
 - Enforces the intended 42–84 day planning window.
 - Builds linked proof, code, or mixed-evidence prompts with explicit success criteria.
-- Produces a private-by-possession review link or portable JSON request.
-- Gives reviewers a focused rubric and exports their checksum-protected response.
+- Produces a review link or portable JSON request. Anyone with the link can read the checkpoint.
+- Gives reviewers a focused rubric and exports a review response with a change check.
 - Imports that response, requires evidence for every problem, and exports an ECDSA P-256 sealed JSON packet.
 - Verifies exported packet integrity in the browser.
 - Works after the first visit without a network connection via a small service worker.
@@ -53,7 +53,7 @@ Do not bypass the wrapper with a direct named-app CLI deployment.
 
 ## Privacy and packet trust
 
-Plans and private signing material stay in local storage. A review link contains an encoded copy of the plan, so possession grants access; use the downloadable request when a long URL is inconvenient. Completion packet signatures detect changes after export but do not verify a learner’s identity, authorship, mastery, or institutional approval.
+Plans and private signing material stay in local storage. A review link contains an encoded copy of the plan. Anyone with that link can read it. Download the request as JSON when you need a file. Completion packet signatures detect changes after export but do not verify a learner’s identity, authorship, mastery, or institutional approval.
 
 The researched brief is in [`.factory/brief.json`](.factory/brief.json), the visual system and original image provenance are in [`.factory/design.md`](.factory/design.md), and release verification is in [`.factory/handoff.md`](.factory/handoff.md).
 

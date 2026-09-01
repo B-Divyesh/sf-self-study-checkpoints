@@ -22,7 +22,7 @@ const STORAGE_KEY = "self-study-checkpoints:v1";
 const STEPS = ["Scope", "Problems", "Review", "Packet"] as const;
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
-const demoMode = location.pathname === "/demo";
+let demoMode = location.pathname === "/demo";
 let checkpoints = demoMode ? [sampleCheckpoint()] : loadCheckpoints();
 let activeId = checkpoints[0]?.id || "";
 let step = 0;
@@ -114,18 +114,48 @@ function shell(content: string, page: "app" | "legal" | "review" = "app"): strin
       <input class="visually-hidden" id="verify-file" type="file" accept="application/json,.json" tabindex="-1" aria-label="Choose a completion packet to verify">
     </header>
     ${demoMode ? '<aside class="demo-banner" aria-label="Demo mode"><strong>Demo — sample data, nothing is saved</strong><span><button class="quiet-button" data-action="reset-demo">Reset demo</button><a class="quiet-link" href="/">Start for real</a></span></aside>' : ""}
-    <div class="offline-banner" id="offline-banner" role="status" hidden>Offline — your desk still works. Changes remain on this device.</div>
+    <div class="offline-banner" id="offline-banner" role="status" hidden>Offline — your checkpoint plan still works. Changes remain on this device.</div>
     ${content}
+    <div id="route-announcer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
     <div id="notice" class="notice" aria-live="polite">${escapeHtml(notice)}</div>
     <footer>
-      <div><strong>Plan self-study checkpoints for human review.</strong><p>Free, non-accredited, and stored on this device.</p></div>
+      <div><strong>Plan self-study checkpoints for reviewer feedback.</strong><p>Free. No account. Plans stay on this device.</p></div>
       <nav aria-label="Legal"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="https://github.com/B-Divyesh/sf-self-study-checkpoints">Source</a></nav>
       <p class="provenance">Built by Param Factory · v1.0.0 · Original artwork generated with Azure AI Foundry · No analytics or trackers.</p>
     </footer>`;
 }
 
-function render(): void {
+type RouteMeta = { title: string; description: string; robots?: string };
+
+function setMeta(name: string, content: string, property = false): void {
+  const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+  const element = document.head.querySelector<HTMLMetaElement>(selector);
+  if (element) element.content = content;
+}
+
+function setRouteMeta(path: string, reviewRequest: ReviewRequest | null): RouteMeta {
+  const base = "https://self-study-checkpoints.sociobot.in";
+  let meta: RouteMeta;
+  if (reviewRequest) meta = { title: "Review checkpoint — Self-Study Checkpoints", description: "Review a self-study checkpoint and return a non-accredited reviewer response.", robots: "noindex" };
+  else if (path === "/demo") meta = { title: "Demo — Self-Study Checkpoints", description: "Try a sample self-study checkpoint. Demo changes are not saved.", robots: "noindex" };
+  else if (path === "/privacy") meta = { title: "Privacy — Self-Study Checkpoints", description: "Read how Self-Study Checkpoints keeps plans and signing keys in your browser." };
+  else if (path === "/terms") meta = { title: "Terms — Self-Study Checkpoints", description: "Read the terms for this local planning tool and non-accredited reviewer workflow." };
+  else if (path === "/404") meta = { title: "Page not found — Self-Study Checkpoints", description: "The requested Self-Study Checkpoints page was not found.", robots: "noindex" };
+  else meta = { title: "Self-Study Checkpoints — plan study progress", description: "Plan a self-study checkpoint, ask a reviewer for feedback, and export a completion packet." };
+  document.title = meta.title;
+  setMeta("description", meta.description);
+  setMeta("robots", meta.robots || "index,follow");
+  const canonical = `${base}${path === "/" ? "/" : path}`;
+  const link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (link) link.href = canonical;
+  setMeta("og:title", meta.title, true); setMeta("og:description", meta.description, true); setMeta("og:url", canonical, true);
+  setMeta("twitter:title", meta.title); setMeta("twitter:description", meta.description);
+  return meta;
+}
+
+function render(moveFocus = false): void {
   const path = location.pathname.replace(/\/$/, "") || "/";
+  const meta = setRouteMeta(path, request);
   if (path === "/privacy" || path === "/terms") {
     root.innerHTML = shell(renderLegal(path), "legal");
   } else if (path === "/404") {
@@ -138,13 +168,17 @@ function render(): void {
     root.innerHTML = shell(renderApp(), "app");
   }
   syncNetworkState();
+  if (moveFocus) {
+    document.querySelector<HTMLElement>("main h1")?.focus();
+    const announcer = document.querySelector<HTMLElement>("#route-announcer");
+    if (announcer) announcer.textContent = `${meta.title.replace(" — Self-Study Checkpoints", "")} page.`;
+  }
 }
 
 function renderNotFound(): string {
-  document.title = "Page not found — Self-Study Checkpoints";
   return `<main id="main" class="legal-page not-found" tabindex="-1">
     <p class="eyebrow">404</p>
-    <h1>This page is not on the study plan.</h1>
+    <h1 tabindex="-1">This page is not on the study plan.</h1>
     <p>The address may be old or incomplete. Return to the checkpoint builder.</p>
     <p><a class="button primary" href="/">Open the builder</a></p>
   </main>`;
@@ -152,35 +186,33 @@ function renderNotFound(): string {
 
 function renderLegal(path: string): string {
   const privacy = path === "/privacy";
-  document.title = `${privacy ? "Privacy" : "Terms"} — Self-Study Checkpoints`;
   return `<main id="main" class="legal-page" tabindex="-1">
     <p class="eyebrow">Plain-language ${privacy ? "privacy note" : "terms"}</p>
-    <h1>${privacy ? "Your study record is yours." : "A planning tool, not a credential."}</h1>
+    <h1 tabindex="-1">${privacy ? "Your study record is yours." : "A planning tool, not a credential."}</h1>
     <p class="lede">Effective 28 August 2026</p>
     ${privacy ? `
       <h2>What is stored</h2><p>Checkpoint plans, links, evidence notes, reviewer responses, and signing keys are stored in your browser’s local storage. They are not sent to us.</p>
       <h2>What you choose to share</h2><p>Review links encode a copy of your checkpoint in the URL. Anyone who receives that link can read it. Exported JSON files contain the details shown before export. Remove private or sensitive material before sharing.</p>
       <h2>Network and analytics</h2><p>The app loads only files from this site. It uses no advertising, behavioral analytics, third-party fonts, or tracking scripts. The hosting platform may retain ordinary security and access logs.</p>
       <h2>Delete your data</h2><p>Delete checkpoints in the builder or clear this site’s browser data. Download an export first if you need a copy. The service worker keeps only public application files for offline use, not your study record.</p>` : `
-      <h2>Purpose</h2><p>Self-Study Checkpoints helps independent learners plan an assessment, request human feedback, and package evidence. It does not teach, proctor, grade automatically, or issue accredited qualifications.</p>
+      <h2>Purpose</h2><p>Self-Study Checkpoints helps independent learners plan an assessment, request reviewer feedback, and package evidence. It does not teach, proctor, grade automatically, or issue accredited qualifications.</p>
       <h2>Your responsibility</h2><p>Only link to exercises and resources you are allowed to share. Do not upload copyrighted problem text, confidential work, personal data, or credentials. You are responsible for checking the accuracy of every packet.</p>
-      <h2>Peer review</h2><p>A reviewer response is an opinion from the named person, not an identity-verified signature. The cryptographic packet seal detects later edits; it does not prove identity, authorship, mastery, or institutional approval.</p>
+      <h2>Reviewer feedback</h2><p>A reviewer response is an opinion from the named person, not an identity-verified signature. The packet change check detects later edits; it does not prove identity, authorship, mastery, or institutional approval.</p>
       <h2>Availability and warranty</h2><p>The tool is provided under the MIT License, without warranty. Local browser data can be lost, so keep exports of important work. The service may change or become unavailable.</p>`}
-    <p><a class="button secondary" href="/">Return to your desk</a></p>
+    <p><a class="button secondary" href="/">Return to the checkpoint builder</a></p>
   </main>`;
 }
 
 function renderApp(): string {
-  document.title = "Self-Study Checkpoints — plan proof of progress";
   const active = activeCheckpoint();
   return `<main id="main" tabindex="-1">
     <section class="hero" aria-labelledby="page-title">
       <div class="hero-copy">
         <p class="eyebrow">Self-study checkpoint builder</p>
-        <h1 id="page-title">Build proof of your self-study progress.</h1>
-        <p class="lede">For independent math and computer-science learners who need a clear checkpoint without enrolling in a course.</p>
+        <h1 id="page-title" tabindex="-1">Plan a self-study checkpoint for review.</h1>
+        <p class="lede">For independent math and computer-science learners who want clear feedback without enrolling in a course.</p>
         <div class="hero-actions"><a class="button primary" href="/demo">Try it with sample data</a><a class="button secondary" href="#workbench">${active ? "Continue your checkpoint" : "Start your checkpoint"}</a></div>
-        <ul class="trust-line" aria-label="Product facts"><li>Free to use.</li><li>Plans stay on this device.</li><li>Review is human and non-accredited.</li></ul>
+        <ul class="trust-line" aria-label="Product facts"><li>Free. No account.</li><li>Plans stay on this device.</li><li>A reviewer decides. It is not accredited.</li></ul>
       </div>
       <picture class="hero-art">
         <source type="image/avif" srcset="/assets/checkpoint-cassette-768.avif 768w, /assets/checkpoint-cassette-1280.avif 1280w" sizes="(max-width: 760px) 100vw, 58vw">
@@ -190,11 +222,11 @@ function renderApp(): string {
     </section>
     <section class="principles" aria-labelledby="how-title">
       <h2 id="how-title">How it works</h2>
-      <ol><li><span>01</span> Define a 6–12 week syllabus slice.</li><li><span>02</span> Agree on evidence and a visible rubric.</li><li><span>03</span> Export a peer-reviewed, integrity-sealed packet.</li></ol>
+      <ol><li><span>01</span> Define a 6–12 week syllabus slice.</li><li><span>02</span> Agree on evidence and a visible rubric.</li><li><span>03</span> Export a reviewed packet that shows whether it changed.</li></ol>
     </section>
     <section class="workbench" id="workbench" aria-labelledby="workbench-title">
       <div class="workbench-heading">
-        <div><p class="eyebrow">Your desk</p><h2 id="workbench-title">Checkpoint builder</h2></div>
+        <div><p class="eyebrow">Your checkpoint plan</p><h2 id="workbench-title">Checkpoint builder</h2></div>
         <div class="save-state"><span class="status-dot" aria-hidden="true"></span><span id="save-status">${active ? "Saved on this device" : "Nothing saved yet"}</span></div>
       </div>
       ${active ? renderWorkspace(active) : renderEmpty()}
@@ -204,10 +236,9 @@ function renderApp(): string {
 }
 
 function renderDemo(): string {
-  document.title = "Demo — Self-Study Checkpoints";
   const active = activeCheckpoint()!;
   return `<main id="main" tabindex="-1">
-    <section class="demo-intro"><p class="eyebrow">Sample checkpoint</p><h1>Inspect a checkpoint already in progress.</h1><p class="lede">Explore Maya’s finite-groups plan. Your changes disappear when you leave demo mode.</p></section>
+    <section class="demo-intro"><p class="eyebrow">Sample checkpoint</p><h1 tabindex="-1">Inspect a checkpoint already in progress.</h1><p class="lede">Explore Maya’s finite-groups plan. Your changes disappear when you leave demo mode.</p></section>
     <section class="workbench demo-workbench" id="workbench" aria-labelledby="workbench-title">
       <div class="workbench-heading"><div><p class="eyebrow">Sample desk</p><h2 id="workbench-title">Checkpoint builder</h2></div><div class="save-state"><span class="status-dot" aria-hidden="true"></span><span id="save-status">Demo changes are temporary</span></div></div>
       ${renderWorkspace(active)}
@@ -218,8 +249,8 @@ function renderDemo(): string {
 function renderEmpty(): string {
   return `<div class="empty-state">
     <div class="empty-tape" aria-hidden="true">${svg("tape")}</div>
-    <p class="eyebrow">Blank side A</p>
-    <h3>Turn a reading plan into a checkable promise.</h3>
+    <p class="eyebrow">No checkpoint yet</p>
+    <h3>Create your first study checkpoint.</h3>
     <p>Start with the exact topic you want to defend. Your work saves locally as you type.</p>
     <button class="button primary" data-action="new-checkpoint">${svg("plus")} Start a checkpoint</button>
   </div>`;
@@ -307,7 +338,7 @@ function renderProblems(checkpoint: Checkpoint, errors: Record<string, string>):
 }
 
 function renderReviewPlan(checkpoint: Checkpoint, errors: Record<string, string>): string {
-  return `<div class="sheet-heading"><p class="track-label">Track 03 / Review</p><h3>Make the judgment visible before the attempt.</h3><p>The reviewer is someone you choose. Their response is peer feedback, not accreditation or identity verification.</p></div>
+  return `<div class="sheet-heading"><p class="track-label">Track 03 / Review</p><h3>Make the judgment visible before the attempt.</h3><p>The reviewer is someone you choose. Their response is reviewer feedback, not accreditation or identity verification.</p></div>
     <div class="reviewer-fields">
       ${field("Reviewer name", "reviewerName", checkpoint.reviewerName, { required: true, error: errors.reviewerName })}
       ${field("Contact note", "reviewerContact", checkpoint.reviewerContact, { hint: "Optional—email or how you know them. Kept local until export." })}
@@ -316,7 +347,7 @@ function renderReviewPlan(checkpoint: Checkpoint, errors: Record<string, string>
     <div class="rubric-heading"><div><h4>Rubric</h4><p>Each line is scored 1–4. A score of ${checkpoint.passThreshold} or higher meets the line.</p></div><label for="threshold">Pass at <select id="threshold" data-field="passThreshold"><option value="2" ${checkpoint.passThreshold === 2 ? "selected" : ""}>2 / 4</option><option value="3" ${checkpoint.passThreshold === 3 ? "selected" : ""}>3 / 4</option><option value="4" ${checkpoint.passThreshold === 4 ? "selected" : ""}>4 / 4</option></select></label></div>
     <div class="rubric-list">${checkpoint.rubric.map((item, index) => `<fieldset class="rubric-row"><legend>Criterion ${index + 1}</legend><div class="field"><label for="rubric-label-${item.id}">Name</label><input id="rubric-label-${item.id}" data-rubric="${item.id}" data-rubric-field="label" value="${escapeHtml(item.label)}"></div><div class="field"><label for="rubric-description-${item.id}">What the reviewer should inspect</label><textarea id="rubric-description-${item.id}" data-rubric="${item.id}" data-rubric-field="description">${escapeHtml(item.description)}</textarea></div>${checkpoint.rubric.length > 1 ? `<button type="button" class="text-button" data-action="remove-rubric" data-id="${item.id}">Remove criterion</button>` : ""}</fieldset>`).join("")}</div>
     <button class="text-button add-line" type="button" data-action="add-rubric">${svg("plus")} Add a criterion</button>
-    <div class="handoff-strip"><div>${svg("link")}<p><strong>Ready for a human check?</strong><br><span>Share a private-by-possession link or download the same request as JSON.</span></p></div><div class="handoff-actions"><button class="button primary" type="button" data-action="copy-review-link">Copy review link</button><button class="button secondary" type="button" data-action="download-request">${svg("download")} Request file</button></div></div>`;
+    <div class="handoff-strip"><div>${svg("link")}<p><strong>Ready for reviewer feedback?</strong><br><span>Anyone with this link can read the checkpoint. You can also download the request as JSON.</span></p></div><div class="handoff-actions"><button class="button primary" type="button" data-action="copy-review-link">Copy review link</button><button class="button secondary" type="button" data-action="download-request">${svg("download")} Request file</button></div></div>`;
 }
 
 function renderPacket(checkpoint: Checkpoint, errors: Record<string, string>): string {
@@ -340,7 +371,7 @@ function renderPacket(checkpoint: Checkpoint, errors: Record<string, string>): s
       ${checkLine(checkpoint.problems.length > 0 && missingEvidence.length === 0, missingEvidence.length ? `Evidence missing for ${missingEvidence.length} problem${missingEvidence.length === 1 ? "" : "s"}` : "Every problem has an evidence link")}
       ${checkLine(Boolean(checkpoint.review?.attestation), checkpoint.review?.attestation ? "Reviewer attested to their response" : "Reviewer response not imported")}
     </ul></div>
-    <div class="seal-box"><div class="seal-icon">${svg("lock")}</div><div><h4>Portable completion packet</h4><p>The JSON export includes the plan, source links, evidence, peer response, public verification key, and an ECDSA integrity seal. The seal detects edits; it does not prove identity or confer credit.</p><button class="button primary" type="button" data-action="export-packet" ${ready ? "" : "disabled"}>${svg("download")} Seal and export packet</button>${!ready ? '<p class="button-note">Complete all three checks to export.</p>' : ""}</div></div>`;
+    <div class="seal-box"><div class="seal-icon">${svg("lock")}</div><div><h4>Portable completion packet</h4><p>The JSON export includes the plan, source links, evidence, reviewer response, public verification key, and ECDSA P-256 change check. It detects edits but does not prove identity or confer credit.</p><button class="button primary" type="button" data-action="export-packet" ${ready ? "" : "disabled"}>${svg("download")} Seal and export packet</button>${!ready ? '<p class="button-note">Complete all three checks to export.</p>' : ""}</div></div>`;
 }
 
 function checkLine(done: boolean, label: string): string {
@@ -356,15 +387,14 @@ function stepComplete(checkpoint: Checkpoint, index: number): boolean {
 }
 
 function renderReviewer(reviewRequest: ReviewRequest): string {
-  document.title = `Review ${reviewRequest.title} — Self-Study Checkpoints`;
   return `<main id="main" class="review-page" tabindex="-1">
-    <section class="review-intro"><p class="eyebrow">Peer review request</p><h1>${escapeHtml(reviewRequest.title)}</h1><p class="lede">${escapeHtml(reviewRequest.learnerName)} asks you to inspect a self-study checkpoint in <strong>${escapeHtml(reviewRequest.topic)}</strong>.</p><div class="noncredential-note"><strong>This is not an accredited assessment.</strong> Your response is a transparent peer opinion. The app does not verify your identity or grade the work.</div></section>
+    <section class="review-intro"><p class="eyebrow">Reviewer request</p><h1 tabindex="-1">${escapeHtml(reviewRequest.title)}</h1><p class="lede">${escapeHtml(reviewRequest.learnerName)} asks you to inspect a self-study checkpoint in <strong>${escapeHtml(reviewRequest.topic)}</strong>.</p><div class="noncredential-note"><strong>This is not an accredited assessment.</strong> A reviewer response is an opinion. The app does not verify identity or grade the work.</div></section>
     <div class="review-layout">
       <aside class="review-brief"><p class="track-label">The agreement</p><dl><div><dt>Window</dt><dd>${formatDate(reviewRequest.startDate)} – ${formatDate(reviewRequest.targetDate)}</dd></div><div><dt>Outcome</dt><dd>${escapeHtml(reviewRequest.goal)}</dd></div><div><dt>Reviewer</dt><dd>${escapeHtml(reviewRequest.reviewerName || "Open request")}</dd></div></dl><p>${escapeHtml(reviewRequest.reviewerInstructions)}</p></aside>
       <form id="review-form" class="review-form" novalidate>
         <section><h2>1. Inspect the work</h2>${reviewRequest.problems.map((problem, index) => { const evidence = reviewRequest.evidence.find((item) => item.problemId === problem.id); return `<article class="problem-review"><p class="eyebrow">Problem ${index + 1} · ${escapeHtml(problem.evidenceType)}</p><h3>${escapeHtml(problem.title)}</h3><p>${escapeHtml(problem.prompt)}</p><p><strong>Success looks like:</strong> ${escapeHtml(problem.success)}</p><p><a href="${safeUrl(problem.sourceUrl)}" target="_blank" rel="noreferrer">Open source ↗</a>${evidence?.url ? ` · <a href="${safeUrl(evidence.url)}" target="_blank" rel="noreferrer">Open evidence ↗</a>` : " · Evidence link not included"}</p>${evidence?.notes ? `<p class="evidence-note"><strong>Learner’s note:</strong> ${escapeHtml(evidence.notes)}</p>` : ""}</article>`; }).join("")}</section>
         <section><h2>2. Score the agreed rubric</h2><p>Use 1 for “not demonstrated” through 4 for “clearly demonstrated.” The agreed threshold is ${reviewRequest.passThreshold}.</p>${reviewRequest.rubric.map((item) => `<fieldset class="score-row"><legend>${escapeHtml(item.label)}</legend><p>${escapeHtml(item.description)}</p><label for="score-${item.id}">Score <span aria-hidden="true">*</span></label><select id="score-${item.id}" data-review-score="${item.id}" required><option value="">Choose 1–4</option><option value="1">1 — Not demonstrated</option><option value="2">2 — Partly demonstrated</option><option value="3">3 — Demonstrated</option><option value="4">4 — Clearly demonstrated</option></select><label for="note-${item.id}">Specific note</label><textarea id="note-${item.id}" data-review-note="${item.id}"></textarea></fieldset>`).join("")}</section>
-        <section><h2>3. Return your response</h2><div class="field"><label for="reviewer-name">Your name <span aria-hidden="true">*</span></label><input id="reviewer-name" required value="${escapeHtml(reviewRequest.reviewerName)}"></div><div class="field"><label for="relationship">Relationship to learner</label><input id="relationship" placeholder="Example: study group peer"></div><div class="field"><label for="overall">Overall feedback <span aria-hidden="true">*</span></label><textarea id="overall" required></textarea></div><div class="field"><label for="verdict">Overall decision <span aria-hidden="true">*</span></label><select id="verdict" required><option value="">Choose a decision</option><option value="meets">Meets this checkpoint</option><option value="revise">Revise and return</option><option value="not-yet">Not yet demonstrated</option></select></div><label class="check-field"><input id="attestation" type="checkbox" required><span>I attest that I inspected the linked work and that this response reflects my own judgment. I understand this is non-accredited peer review.</span></label><button class="button primary" type="submit">${svg("download")} Download signed-off response</button><p class="button-note">Send the downloaded JSON file back to ${escapeHtml(reviewRequest.learnerName)}. It contains your typed attestation and a checksum, not a verified digital identity.</p></section>
+        <section><h2>3. Return your response</h2><div class="field"><label for="reviewer-name">Your name <span aria-hidden="true">*</span></label><input id="reviewer-name" required value="${escapeHtml(reviewRequest.reviewerName)}"></div><div class="field"><label for="relationship">Relationship to learner</label><input id="relationship" placeholder="Example: study group reviewer"></div><div class="field"><label for="overall">Overall feedback <span aria-hidden="true">*</span></label><textarea id="overall" required></textarea></div><div class="field"><label for="verdict">Overall decision <span aria-hidden="true">*</span></label><select id="verdict" required><option value="">Choose a decision</option><option value="meets">Meets this checkpoint</option><option value="revise">Revise and return</option><option value="not-yet">Not yet demonstrated</option></select></div><label class="check-field"><input id="attestation" type="checkbox" required><span>I attest that I inspected the linked work and that this response reflects my own judgment. I understand this is non-accredited reviewer feedback.</span></label><button class="button primary" type="submit">${svg("download")} Download signed-off response</button><p class="button-note">Send the downloaded JSON file back to ${escapeHtml(reviewRequest.learnerName)}. It contains your typed attestation and a change check, not a verified digital identity.</p></section>
       </form>
     </div>
   </main>`;
@@ -492,6 +522,31 @@ function updateDateWindowFeedback(checkpoint: Checkpoint): void {
   }
 }
 
+function navigate(to: string, replace = false): void {
+  const destination = new URL(to, location.origin);
+  const nextDemo = destination.pathname === "/demo";
+  if (nextDemo !== demoMode) {
+    demoMode = nextDemo;
+    checkpoints = demoMode ? [sampleCheckpoint()] : loadCheckpoints();
+    activeId = checkpoints[0]?.id || "";
+    step = 0;
+  }
+  request = requestFromUrlAt(destination);
+  if (replace) history.replaceState({}, "", `${destination.pathname}${destination.search}${destination.hash}`);
+  else history.pushState({}, "", `${destination.pathname}${destination.search}${destination.hash}`);
+  render(true);
+}
+
+function requestFromUrlAt(url: URL): ReviewRequest | null {
+  const value = url.searchParams.get("review");
+  if (!value) return null;
+  try { return decodeRequest(value); }
+  catch (error) {
+    notice = error instanceof Error ? error.message : "The review link could not be read.";
+    return null;
+  }
+}
+
 document.addEventListener("input", (event) => {
   const target = event.target;
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) updateCheckpointField(target);
@@ -518,6 +573,14 @@ document.addEventListener("click", async (event) => {
       history.replaceState(null, "", `${location.pathname}${location.search}#main`);
       main.focus();
     }
+    return;
+  }
+  const link = (event.target as Element).closest<HTMLAnchorElement>("a[href]");
+  if (link && link.origin === location.origin && !link.target && !link.hasAttribute("download") && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+    const destination = new URL(link.href);
+    if (destination.hash && destination.pathname === location.pathname && destination.search === location.search) return;
+    event.preventDefault();
+    navigate(`${destination.pathname}${destination.search}${destination.hash}`);
     return;
   }
   const button = (event.target as Element).closest<HTMLElement>("[data-action]");
@@ -555,7 +618,7 @@ document.addEventListener("click", async (event) => {
     const errors = validateCheckpoint(checkpoint); if (Object.keys(errors).length) { setNotice("Finish the required plan fields before sharing a review request.", "error"); return; }
     const reviewPath = demoMode ? "/demo" : "/";
     const link = `${location.origin}${reviewPath}?review=${encodeRequest(requestFromCheckpoint(checkpoint))}`;
-    try { await navigator.clipboard.writeText(link); setNotice("Private-by-possession review link copied. Share it only with your reviewer."); } catch { window.prompt("Copy this review link", link); }
+    try { await navigator.clipboard.writeText(link); setNotice("Review link copied. Anyone with it can read this checkpoint."); } catch { window.prompt("Copy this review link", link); }
   } else if (action === "download-request" && checkpoint) {
     const errors = validateCheckpoint(checkpoint); if (Object.keys(errors).length) { setNotice("Finish the required plan fields before downloading a request.", "error"); return; }
     downloadJson(`${slug(checkpoint.title)}-review-request.json`, requestFromCheckpoint(checkpoint)); setNotice("Review request downloaded.");
@@ -563,7 +626,7 @@ document.addEventListener("click", async (event) => {
     document.querySelector<HTMLInputElement>("#review-file")?.click();
   } else if (action === "export-packet" && checkpoint) {
     button.setAttribute("aria-busy", "true"); button.textContent = "Sealing…";
-    try { if (!checkpoint.signingKey) { checkpoint.signingKey = await createSigningKey(); saveCheckpoints(); } const packet = await createCompletionPacket(checkpoint); downloadJson(`${slug(checkpoint.title)}-completion-packet.json`, packet); setNotice("Integrity-sealed completion packet downloaded."); }
+    try { if (!checkpoint.signingKey) { checkpoint.signingKey = await createSigningKey(); saveCheckpoints(); } const packet = await createCompletionPacket(checkpoint); downloadJson(`${slug(checkpoint.title)}-completion-packet.json`, packet); setNotice("Completion packet downloaded with a change check."); }
     catch { setNotice("The browser could not create a seal. Try a current browser or export from another device.", "error"); }
     finally { render(); }
   } else if (action === "open-request") {
@@ -580,7 +643,7 @@ document.addEventListener("change", async (event) => {
     const data = await readJsonFile(input) as Record<string, unknown>;
     if (input.id === "request-file") {
       if (data.kind !== "self-study-review-request" || data.version !== 1) throw new Error("That file is not a supported review request.");
-      request = data as unknown as ReviewRequest; history.pushState({}, "", "/"); render();
+      request = data as unknown as ReviewRequest; history.pushState({}, "", "/"); render(true);
     } else if (input.id === "review-file") {
       const checkpoint = activeCheckpoint(); if (!checkpoint) return;
       if (data.kind !== "self-study-review" || data.version !== 1 || data.checkpointId !== checkpoint.id) throw new Error("This response belongs to a different checkpoint or has an unsupported format.");
@@ -604,7 +667,17 @@ function syncNetworkState(): void {
 
 window.addEventListener("online", () => { syncNetworkState(); setNotice("Back online. Your local work did not need to sync."); });
 window.addEventListener("offline", syncNetworkState);
-window.addEventListener("popstate", () => { request = requestFromUrl(); render(); });
+window.addEventListener("popstate", () => {
+  const nextDemo = location.pathname === "/demo";
+  if (nextDemo !== demoMode) {
+    demoMode = nextDemo;
+    checkpoints = demoMode ? [sampleCheckpoint()] : loadCheckpoints();
+    activeId = checkpoints[0]?.id || "";
+    step = 0;
+  }
+  request = requestFromUrl();
+  render(true);
+});
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => undefined));
 

@@ -1,8 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { encodeRequest, requestFromCheckpoint, sampleCheckpoint } from "../../src/model";
 
-test("@claim:workspace-planning @claim:human-review @claim:sealed-packet builds, reviews, exports, and verifies a checkpoint", async ({ page, context }) => {
+async function completeDemoFlow(page: Page, context: BrowserContext): Promise<void> {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/demo");
 
@@ -48,6 +48,32 @@ test("@claim:workspace-planning @claim:human-review @claim:sealed-packet builds,
   expect(packetFile).toBeTruthy();
 
   await page.locator("#verify-file").setInputFiles(packetFile!);
+  await expect(page.getByText(/Seal valid:/)).toBeVisible();
+}
+
+test("completes the demo owner, reviewer, and packet workflow", async ({ page, context }) => {
+  await completeDemoFlow(page, context);
+});
+
+test("@claim:workspace-planning shows a complete 42–84 day sample plan", async ({ page }) => {
+  await page.goto("/demo");
+  await expect(page.getByLabel("Checkpoint title")).toHaveValue("Finite groups checkpoint");
+  await expect(page.locator("#duration-note")).toContainText("56 days");
+  await page.getByRole("button", { name: /02 Problems/ }).click();
+  await expect(page.getByLabel("Visible success criteria").first()).not.toHaveValue("");
+  await page.getByRole("button", { name: /03 Review/ }).click();
+  await expect(page.getByLabel("Reviewer name")).not.toHaveValue("");
+  await page.getByRole("button", { name: /04 Packet/ }).click();
+  await expect(page.getByLabel("Public or reviewer-accessible link").first()).not.toHaveValue("");
+});
+
+test("@claim:human-review exports and imports a checksum-verified reviewer response", async ({ page, context }) => {
+  await completeDemoFlow(page, context);
+  await expect(page.getByText(/Seal valid:/)).toBeVisible();
+});
+
+test("@claim:sealed-packet exports and verifies an integrity-sealed packet", async ({ page, context }) => {
+  await completeDemoFlow(page, context);
   await expect(page.getByText(/Seal valid:/)).toBeVisible();
 });
 
@@ -128,6 +154,58 @@ test("moves skip-link focus to main content", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main");
 });
 
+test("moves focus and announces each internal route change, including browser Back", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Privacy" }).first().click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  await expect(page.locator("#route-announcer")).toHaveText("Privacy page.");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  await expect(page.locator("#route-announcer")).toHaveText("Self-Study Checkpoints — plan study progress page.");
+});
+
+test("sets route-specific canonical and social metadata", async ({ page }) => {
+  const expectations = [
+    ["/", "Self-Study Checkpoints — plan study progress", "https://self-study-checkpoints.sociobot.in/"],
+    ["/demo", "Demo — Self-Study Checkpoints", "https://self-study-checkpoints.sociobot.in/demo"],
+    ["/privacy", "Privacy — Self-Study Checkpoints", "https://self-study-checkpoints.sociobot.in/privacy"],
+    ["/terms", "Terms — Self-Study Checkpoints", "https://self-study-checkpoints.sociobot.in/terms"],
+    ["/404", "Page not found — Self-Study Checkpoints", "https://self-study-checkpoints.sociobot.in/404"]
+  ];
+  for (const [route, title, canonical] of expectations) {
+    await page.goto(route);
+    await expect(page).toHaveTitle(title);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", canonical);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", title);
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", canonical);
+  }
+});
+
+test("static HTTP 404 shell has metadata, keyboard skip focus, and legal links", async ({ page }) => {
+  await page.goto("/404.html");
+  await expect(page).toHaveTitle("Page not found — Self-Study Checkpoints");
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /requested Self-Study Checkpoints page/);
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Page not found — Self-Study Checkpoints");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main");
+  await expect(page.getByRole("link", { name: "Privacy" }).last()).toHaveAttribute("href", "/privacy");
+  await expect(page.getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+});
+
+test("separates mobile header destinations with a visible gap", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const gap = await page.evaluate(() => {
+    const demo = [...document.querySelectorAll<HTMLAnchorElement>(".site-header nav a")].find((link) => link.textContent === "Demo")!;
+    const privacy = [...document.querySelectorAll<HTMLAnchorElement>(".site-header nav a")].find((link) => link.textContent === "Privacy")!;
+    return privacy.getBoundingClientRect().left - demo.getBoundingClientRect().right;
+  });
+  expect(gap).toBeGreaterThanOrEqual(12);
+});
+
 test("updates the 6–12 week feedback while a target date is edited", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Start a checkpoint" }).click();
@@ -190,7 +268,7 @@ test("@claim:demo-sandbox keeps sample changes out of real storage", async ({ pa
   expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith("demo:")))).toEqual([]);
 });
 
-test("@claim:local-only @claim:free-no-account keeps the complete demo flow on the site origin", async ({ page }) => {
+test("keeps the complete demo flow on the site origin", async ({ page }) => {
   const origins = new Set<string>();
   page.on("request", (request) => origins.add(new URL(request.url()).origin));
   await page.goto("/demo");
@@ -199,6 +277,96 @@ test("@claim:local-only @claim:free-no-account keeps the complete demo flow on t
   await page.getByRole("button", { name: /03 Review/ }).click();
   await page.getByRole("button", { name: /04 Packet/ }).click();
   expect([...origins]).toEqual(["http://127.0.0.1:4173"]);
+});
+
+test("@claim:free-no-account opens and edits the demo without an account or external auth/payment request", async ({ page }) => {
+  const urls: string[] = [];
+  page.on("request", (request) => urls.push(request.url()));
+  await page.goto("/demo");
+  await page.getByLabel("Checkpoint title").fill("No account needed");
+  await page.getByRole("button", { name: /02 Problems/ }).click();
+  expect(urls.every((url) => new URL(url).origin === "http://127.0.0.1:4173")).toBe(true);
+  expect(urls.some((url) => /auth|login|payment|checkout/i.test(url))).toBe(false);
+});
+
+test("@claim:local-only sends demo data only to the site origin", async ({ page }) => {
+  const origins = new Set<string>();
+  page.on("request", (request) => origins.add(new URL(request.url()).origin));
+  await page.goto("/demo");
+  await page.getByLabel("Checkpoint title").fill("Local-only edit");
+  await page.getByRole("button", { name: /02 Problems/ }).click();
+  await page.getByRole("button", { name: /03 Review/ }).click();
+  await page.getByRole("button", { name: /04 Packet/ }).click();
+  expect([...origins]).toEqual(["http://127.0.0.1:4173"]);
+});
+
+test("@claim:local-autosave keeps a typed real-workspace title after reload", async ({ page }) => {
+  await page.goto("/demo");
+  await page.getByRole("link", { name: "Start for real" }).click();
+  await page.getByRole("button", { name: "Start a checkpoint" }).click();
+  await page.getByLabel("Checkpoint title").fill("Reloaded local title");
+  await page.reload();
+  await expect(page.getByLabel("Checkpoint title")).toHaveValue("Reloaded local title");
+});
+
+test("@claim:scope-limits discloses the product limits on the site and in the README", async ({ page }) => {
+  await page.goto("/demo");
+  await page.getByRole("link", { name: "Start for real" }).click();
+  await expect(page.getByText("It does not teach, grade proofs, verify identity, proctor work, or issue credentials.")).toBeVisible();
+  await page.getByRole("link", { name: "Terms" }).click();
+  await expect(page.getByText(/does not teach, proctor, grade automatically, or issue accredited qualifications/)).toBeVisible();
+  const readme = await import("node:fs/promises").then(({ readFile }) => readFile("README.md", "utf8"));
+  expect(readme).toContain("It does not teach, grade proofs, verify identity, proctor work, issue credentials");
+});
+
+test("@claim:non-accredited-review names the reviewer role and non-accredited status", async ({ page }) => {
+  await page.goto("/demo");
+  await page.getByRole("button", { name: /03 Review/ }).click();
+  await expect(page.getByText(/The reviewer is someone you choose/)).toBeVisible();
+  const review = encodeRequest(requestFromCheckpoint(sampleCheckpoint()));
+  await page.goto(`/demo?review=${review}`);
+  await expect(page.getByText("This is not an accredited assessment.")).toBeVisible();
+});
+
+test("@claim:no-tracking loads no analytics or tracking resource", async ({ page }) => {
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await page.goto("/demo");
+  await page.getByLabel("Utility navigation").getByRole("link", { name: "Privacy" }).click();
+  await expect(page.getByText(/no advertising, behavioral analytics, third-party fonts, or tracking scripts/)).toBeVisible();
+  expect(requests.every((url) => new URL(url).origin === "http://127.0.0.1:4173")).toBe(true);
+  expect(requests.some((url) => /analytics|tracking|segment|pixel/i.test(url))).toBe(false);
+});
+
+test("@claim:multiple-local-plans keeps two real plans after reload", async ({ page }) => {
+  await page.goto("/demo");
+  await page.getByRole("link", { name: "Start for real" }).click();
+  await page.getByRole("button", { name: "Start a checkpoint" }).click();
+  await page.getByLabel("Checkpoint title").fill("First local plan");
+  await page.getByRole("button", { name: "Create a new checkpoint" }).click();
+  await page.getByLabel("Checkpoint title").fill("Second local plan");
+  await page.reload();
+  await expect(page.getByRole("button", { name: /First local plan/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Second local plan/ })).toBeVisible();
+});
+
+test("@claim:review-request-options produces both a review link and JSON request", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/demo");
+  await page.getByRole("button", { name: /03 Review/ }).click();
+  await page.getByRole("button", { name: "Copy review link" }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("/demo?review=");
+  const downloaded = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Request file", exact: true }).click();
+  expect((await downloaded).suggestedFilename()).toMatch(/review-request\.json$/);
+});
+
+test("@claim:review-link-disclosure explains who can read a shared review link", async ({ page }) => {
+  await page.goto("/demo");
+  await page.getByRole("button", { name: /03 Review/ }).click();
+  await expect(page.getByText("Anyone with this link can read the checkpoint.")).toBeVisible();
+  await page.getByLabel("Utility navigation").getByRole("link", { name: "Privacy" }).click();
+  await expect(page.getByText("Anyone who receives that link can read it.")).toBeVisible();
 });
 
 test("has no serious or critical accessibility violations on public routes", async ({ page }) => {
