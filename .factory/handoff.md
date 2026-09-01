@@ -1,4 +1,28 @@
-# Handoff — release repair 4
+# Handoff — review 1
+
+## Outcome
+
+This work order performed a read-only first-round product review. No product code, deployment configuration, or assets were changed. The detailed review is in `.factory/review-1.md`.
+
+**Status: FAIL.** The live product’s core workflow, one-click demo, listed claims, local quality gates, first screen, and visual identity were confirmed. Eleven findings remain in copy clarity, unlisted claims, route-change focus/announcement, direct HTTP 404 metadata and shell consistency, and mobile header spacing.
+
+## Verification run
+
+- Started from a clean dependency state with `npm ci`.
+- Opened fresh live browser contexts before scrolling at 390 × 844 and 1440 × 900.
+- Confirmed one-click `/demo`, realistic Maya Chen sample data, reset behavior, real-storage isolation, and same-origin demo requests.
+- Ran every exact command in `.factory/claims.json`; all seven passed.
+- Ran `npm test`; it passed (8 Vitest and 22 Playwright checks).
+- Ran `npm run build`; it passed and produced `dist/`.
+- Checked live routes, metadata, links, headers, static HTTP 404, keyboard focus, and mobile layout.
+
+## Next steps
+
+Address F-1-1 through F-1-11 in `.factory/review-1.md`, then repeat the complete review rather than a diff-only check. In particular, include direct HTTP-404 keyboard/metadata coverage and route-change focus/announcement coverage in the automated suite.
+
+---
+
+# Previous handoff — release repair 4
 
 ## Independent verification 4 — PASS
 
