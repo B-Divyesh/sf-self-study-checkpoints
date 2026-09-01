@@ -1,40 +1,43 @@
-# Handoff — first-read review 2
+# Handoff — polish round 2
 
 ## Status
 
-**FAIL** for candidate `07e990c075ad6862b51af393fd00be80d5447ede` at <https://self-study-checkpoints.sociobot.in/> on 1 September 2026 UTC.
+**PASS** — every finding in `.factory/review-2.md` and the earlier review/polish record is closed.
 
-The complete review is in `.factory/review-2.md`. Five findings remain. The blocking item is the half-fixed earlier claim-coverage finding: the product says private signing material stays in browser storage, but no listed claim test creates a real-workspace signing key and confirms its storage, request behavior, and omission from the downloaded packet.
+- Repair commit: `ca1b8faecf9c0958b8d53a0d8e299c68746429ff`
+- Runnable-claim command commit: `100699b572024ec50a70e3de0ae562d2db539e69`
+- Both commits are pushed to `main`.
+- Static deployment: `e599c154-6a6a-4bc1-adfb-ba5858005cf7`
+- Live URL: <https://self-study-checkpoints.sociobot.in/?demo=1>
 
-## Work completed
+## What changed
 
-- Checked the live first screen in fresh 390 × 844 and 1440 × 900 browser contexts before scrolling.
-- Entered the sample in one click and confirmed populated data, persistent demo banner, Reset demo, real-storage isolation, same-origin requests, and offline reload.
-- Ran every exact command in `.factory/claims.json` from a fresh temporary clone; all 14 passed.
-- Ran `npm test` and `npm run build`; 8 Vitest and 54 Playwright checks passed, and `dist/` was produced.
-- Confirmed the live HTML, JavaScript, and CSS match the fresh build by SHA-256.
-- Checked route titles, metadata, one `h1`, one `main`, internal links, HTTP 404 behavior, keyboard focus, browser Back, touch targets, and mobile overflow.
-- Ran live Axe checks on home, demo, Privacy, Terms, and HTTP 404 at mobile and desktop sizes; no serious or critical issue was reported.
-- Ran `/opt/fleet/lib/verify-url.sh` against the live demo; it passed.
-- Read the earlier review, polish report, handoff, and verification reports, then independently checked every earlier finding.
-- Audited every landing copy unit and every README sentence with word counts.
+- Added one-click `?demo=1` entry, persistent isolated-demo controls, and demo-only review links.
+- Added tested real-workspace signing-key privacy coverage and tested artwork provenance.
+- Replaced remaining functional cassette metaphors with product terms and plain packet language.
+- Completed the direct 404 metadata with the Apple touch icon and plain Page not found heading.
+- Named the external GitHub source link, rewrote README technical/internal wording, and refreshed the copy audit.
 
-No product code was changed.
+## Exact verification evidence
 
-## Verification commands
+- Fresh clone `/tmp/self-study-checkpoints-clean.lKy0yI`: `npm ci`, `npm test`, and `npm run build` passed. The complete suite passed **9 Vitest checks and 60 Playwright checks**.
+- Every declared claim command was run from that clean clone: `workspace-planning`, `human-review`, `sealed-packet`, `free-no-account`, `offline-reload`, `demo-sandbox`, `local-only`, `local-autosave`, `scope-limits`, `non-accredited-review`, `no-tracking`, `multiple-local-plans`, `review-request-options`, `review-link-disclosure`, and `local-signing-key` all passed.
+- The corrected `artwork-provenance` command was run from a second clean clone at `/tmp/self-study-checkpoints-claim.8dRhOu` and passed.
+- `npm run build` produced `dist/`; app JavaScript is **44.49 kB** uncompressed / **14.47 kB gzip**, and CSS is **17.38 kB** / **4.75 kB gzip**.
+- `/opt/fleet/lib/verify-url.sh https://self-study-checkpoints.sociobot.in/?demo=1` passed: HTTP 200, Demo title, `lang=en`, one h1, main landmark, no missing image alternatives, no unlabeled buttons, and no console errors.
+- Live Playwright + Axe checked `/`, `/?demo=1`, `/privacy`, `/terms`, and `/not-real` at 1440 × 900 and 390 × 844. All normal routes were HTTP 200, `/not-real` was HTTP 404, every route had one h1 and one main, and there were no serious or critical Axe issues or page errors.
+- Cold live 390px check confirmed the demo banner, Reset demo, Start for real, external Source label, no old functional metaphors, and no horizontal overflow.
+- Evidence screenshots: [desktop demo](evidence/polish-2-live/demo-desktop.png), [mobile demo](evidence/polish-2-live/demo-mobile.png), [direct 404](evidence/polish-2-live/not-found-desktop.png).
+
+## Run and deploy
 
 ```sh
 npm ci
 npm test
 npm run build
+/opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist
 ```
 
-Each command listed in `.factory/claims.json` must also be run literally from a fresh clone. For live smoke verification:
+## Known gaps
 
-```sh
-/opt/fleet/lib/verify-url.sh https://self-study-checkpoints.sociobot.in/demo /tmp/self-study-checkpoints-review-2
-```
-
-## Remaining work
-
-See F-1-7 and F-2-1 through F-2-4 in `.factory/review-2.md`. The product remains buildable and the sample works, but the zero-finding review standard is not met.
+None.
