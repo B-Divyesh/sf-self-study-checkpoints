@@ -2,7 +2,7 @@
 
 ## Status
 
-**Ready to deploy.** This repair closes the P2 release blocker recorded in `.factory/verification-6.md`: a damaged review URL exposed the browser's decoder exception and did not tell the reviewer how to recover.
+**PASS — deployed.** Repair commit `78acc8d41f424041d1a01165390a5cf8b6dde549` is live at <https://self-study-checkpoints.sociobot.in/>. It closes the P2 release blocker recorded in `.factory/verification-6.md`: a damaged review URL exposed the browser's decoder exception and did not tell the reviewer how to recover.
 
 ## What changed
 
@@ -19,14 +19,18 @@
 - `npm run build`: **PASS** — TypeScript checking passed and `dist/index.html` was produced.
 - The new malformed/truncated review-link regression passed on both Playwright projects. A served-build smoke check repeated `?review=%25bad` and `?review=eyJraW5kIjoi`; each rendered the recovery message with no console or page errors.
 - Playwright Axe checks found zero serious or critical violations on `/`, `/demo`, `/privacy`, `/terms`, and `/404` at both viewport projects. Keyboard skip-link, route focus/announcement, 44px controls, reduced motion, and 200% text cases remain covered by the full browser suite.
-- `/opt/fleet/lib/verify-url.sh http://127.0.0.1:4173/demo` passed: title `Demo — Self-Study Checkpoints`, `lang=en`, one `h1`, one `main`, no images missing `alt`, no unlabelled buttons, and no console/page errors. The machine-readable result is [`evidence/repair-5/verify/verify.json`](evidence/repair-5/verify/verify.json).
+- `/opt/fleet/lib/verify-url.sh` passed locally and against the live `/demo`: title `Demo — Self-Study Checkpoints`, `lang=en`, one `h1`, one `main`, no images missing `alt`, no unlabelled buttons, and no console/page errors. The live machine-readable result is [`evidence/repair-5/live-verify/verify.json`](evidence/repair-5/live-verify/verify.json).
 - The static response-policy checks passed for CSP, headers, immutable hashed bundles, short-lived documents, and the real 404 route.
 - Local mobile Lighthouse on `/demo`: Performance **100**, Accessibility **100**, Best Practices **100**; FCP **1.06 s**, LCP **1.24 s**, TBT **12 ms**, CLS **0**.
 - Final bundle sizes: JavaScript 44,431 bytes / 14.57 kB gzip; CSS 17,384 bytes / 4.74 kB gzip; mobile AVIF hero 24,573 bytes. No third-party runtime requests or font downloads were introduced.
 
 ## Deploy and live verification
 
-Deployment and live byte-identity verification will be recorded here immediately after the repair commit is pushed and deployed.
+- Deployed via `/opt/fleet/lib/deploy-static.sh self-study-checkpoints /work/repo/dist`; Azure deployment id `33e5f35d-19dc-48e6-9d85-dbcf1461fd48` completed successfully and the custom domain returned HTTPS 200.
+- All 18 public files in `dist/` matched the live deployment byte-for-byte. `staticwebapp.config.json` is deployment configuration and is not a public artifact.
+- Live response policy includes HSTS, `X-Content-Type-Options: nosniff`, strict referrer policy, restrictive permissions policy, and the self-only CSP with response-header `frame-ancestors 'none'`.
+- A live Playwright/Axe pass checked `/`, `/demo`, `/privacy`, `/terms`, and `/404` at 1440px and 390px: every route had one `h1` and one `main`, no console/page errors, and zero serious or critical violations.
+- The live exact malformed value `?review=%25bad` and truncated value `?review=eyJraW5kIjoi` both rendered the recovery notice with no browser errors. A fresh service-worker-controlled live `/demo` also reloaded offline with the sample heading and persistent demo banner.
 
 ## Known gaps
 
